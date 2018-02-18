@@ -1,0 +1,255 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r set parameters}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+
+## colour scale
+plot_palette<-c(
+  "0"="#c45277",
+  "1"="#74d955",
+  "2"="#643fc2",
+  "3"="#cfd350",
+  "5"="#c65ad8",
+  "8"="#659240",
+  "15"="#d7429e",
+  "25"="#73d6a9",
+  "35"="#d34e28",
+  "60"="#c88c40",
+  "100"="#7b387b",
+  "200"="#ccc196",
+  "opP_citrine"="#4a4e73",
+  "fry70"="black",
+  "pTDH3_citrine + pTHD3_mTFP1"="#cf5354",
+  "pTDH3_mTFP1"="#86c3d7",
+  "opP_mTFP1"="#794238",
+  "opP_mTFP1 + opP_citrine"="#528079",
+  "pTDH3_citrine"="#cd9fc2")
+
+
+# reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
+t0p1_file<-"180213_mTFP1/mTFP1"
+control_file<-"180213_mTFP1/mTFP1/controls"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/feb18/180213_mTFP1" # for saving plots
+xlabel<-expression(paste("aTc[ng/",mu,"L]", sep = "")) 
+
+starting_well<-1
+wells_per_sample<-12
+
+experiment_doses<-c(0,1,2,3,5,8,15,25,35,60,100,200)
+columns_to_include<-c(3,6,7,24) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+strain_names<-c("2684","2718") # all of them are just one strain, FRY2561
+time_points<-c("3h")
+controls_names<-c("2661","70","2719","2720","2712","2713","2683")
+
+label_list<- c("citrine", #optimizedP, NF+pVph1_Tup1
+               "citrine + mTFP1"#optimizedP, NF+pVph1_Tup1
+               )
+
+names(label_list)<-strain_names
+
+label_list_controls<-c("opP_citrine",
+                       "fry70",
+                       "pTDH3_citrine + pTHD3_mTFP1",
+                       "pTDH3_mTFP1",
+                       "opP_mTFP1",
+                       "opP_mTFP1 + opP_citrine",
+                       "pTDH3_citrine"
+                       )
+
+names(label_list_controls)<-controls_names
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:5) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-72000 #the value for subsetting based on FSC-W/H
+limit_sscw <-100000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-68000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-40000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+
+#---------------------------------------------------------------------------------------------------------------
+## smoothed dose response curves of the strains you want
+
+descriptive_sequence<-c(1:2) #pick the strains at given timepoints
+label_list_smooth<-label_list[c(1:2)]
+timepoint_used<-1
+number_of_timepoints<-1
+ncol_legend_smooth<-2
+statistic_to_use<-1 #1 is median, 2 is mean
+scale_x_breaks_smooth<-experiment_doses
+scale_x_labels_smooth<-experiment_doses
+legend_title_smooth<-"Strain"
+plot_title_smooth<-"Dose Response Curves, 3h"
+xlab_smooth<-xlabel
+ylab_smooth<-"Fluorescence (a.u.)"
+legend_direction_smooth<-"vertical"
+legend_position_smooth<-c(0.8,0.2)
+additional_arguments_smooth<-NULL
+time_point_smooth<-"3h" # to be used in the filename when saving the plot.
+
+height_smooth<-10 # the height and width of the plot to be saved
+width_smooth<-15
+#---------------------------------------------------------------------------------------------------------------
+
+## size plots
+fscw_column_size<-1
+sscw_column_size<-2
+xlab_size<-"FSC-W"
+ylab_size<-"SSC-W"
+ylimits_size<-c(40000,NA)
+xlimits_size<-c(40000,NA)
+
+labels_for_grid_size<-time_points # labels for the plots in the 2x2 grid
+
+height_size<-10 # saving dimensions
+width_size<-15
+
+#---------------------------------------------------------------------------------------------------------------
+
+## histograms
+
+doses_histogram<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
+
+labels_histogram<-c("0","1","2","3","5","8","15","25","35","60","100","200") 
+breaks_histogram<-c(labels_histogram, label_list_controls)
+
+control_sequence<-c(1,2,7)
+column_to_plot_controls<-4
+
+
+dose_column<-5 #the column with doses 
+citrine_column<-3 # column with citrine measurement
+control_plot_title<-"controls_mTFP_interference"
+ylimits_controls<-c(0,0.001)
+xlimits_controls<-c(0,30000)
+
+size_histogram<- 1.3 # size of the lines
+legend_title_histogram<-xlabel
+legend_ncol_histogram<-2
+legend_position_histogram<-c(0.7,0.8)
+xlimits_histogram<-c(0,60000)
+ylimits_histogram<-c(0,0.0002)
+
+grid_labels_histograms<-time_points # labels for the plots in the 2x2 grid
+
+height_histograms<-10 # saving dimensions
+width_histograms<-15
+#---------------------------------------------------------------------------------------------------------------
+
+## descriptive plots
+palette<-c("0h"="orange","5h"="red", "21h"="purple")
+colour_labels<-time_points
+scale_x_breaks<-experiment_doses
+ylab_title<-"Fluorescence (a.u.)"
+xlab_title<-xlabel
+legend_title<-"Time Point"
+stat_columns_1<-c(1,6)
+stat_columns_2<-c(2,7)
+size_value_descriptives<-4
+height_descriptives<-10
+width_descriptives<-15
+
+#----------------------------------------------------------------------------------------------------------
+
+## sigmoid fits
+descriptives_to_use<-c(9:12)
+labels_to_use<-c(1:4)
+colour_palette<-c("red","blue","grey","purple") # define the colour palette for plotting
+# define the plot title, xlabel
+plot_title<-"Dose Response Curves, 21h"
+xlabel<-expression(paste("aTc[ng/",mu,"L]"))
+
+# define starting points for the fitting for each curve: c(a,b,c,d)
+# a is the upper asymptote, b is the steepest slope, c is the x axis value at b, d is the lower 
+# asymptote. you can define these individually for every curve.
+# a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
+list_of_starting_points<-list(
+  c(30000,0.01,7,10000),
+  c(20000,0.01,27,5000),
+  c(45000,0.01,9,5000),
+  c(50000,0.01,5,5000)
+)
+
+time_point_sigmoid<-"21h"
+height_sigmoid<-10
+width_sigmoid<-15
+#----------------------------------------------------------------------------------------------------------
+## size vs. induction plots
+palette_density<-c("0"="#a2f1f6","1"="#80e8a1","2"="#76e170","3"="#94da61","5"="#b8d353","8"="#cdb745",
+           "15"="#c67b38","25"="#bf3b2c","35"="#b82149","60"="#b11679","100"="#a90caa",
+           "200"="#6703a3")
+x_breaks_density<-labels_histogram
+legend_title_density<-xlabel
+ncol_legend_density<-2
+legend_position_density<-c(0.15,0.68)
+size_column<-5
+citrine_column<-3
+dose_column<-4
+
+doses_size_vs_induction<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
+
+labels_size_vs_induction<-labels_histogram  #labels that will appear on the legend, and that determine the colour_scale_manual mappings. If you change anything here, change it in the colour scale inside the function as well. 
+
+grid_labels_density<-time_points
+
+height_density<-10
+width_density<-15
+#----------------------------------------------------------------------------------------------------------## QQPLOTS
+# in the dataframelist1/2, pick the strain you want to plot. in the doses part, you can specify which 
+# dose is to be plotted. in columns, pick which column is to be plotted. dataframelist1 and 2 will be paired in each qqplot (i.e. dataframelist1[1] is plotted against dataframelist2[[1]])
+dataframelist1<-c(1,1,2,2,1,1,2,2)
+dataframelist1_doses<-c(0,200,0,200,5,25,5,25)
+dataframelist1_columns<-c(3,3,3,3,3,3,3,3)
+dataframelist2<-c(1,1,2,2)
+dataframelist2_doses<-c(0,200,0,200,5,25,5,25)
+dataframelist2_columns<-c(4,4,4,4,4,4,4,4)
+
+xlims_qqplot<-list(c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA))
+ylims_qqplot<-list(c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA),c(0,NA))
+
+titles_qqplot<-c("citrine,0atc",
+          "citrine,200atc",
+          "citrine+TFP,0atc",
+          "citrine+TFP,200atc",
+          "citrine,5atc",
+          "citrine,25atc",
+          "citrine+TFP,5atc",
+          "citrine+TFP,25atc"
+          )
+
+width_qq<-15
+height_qq<-10
+```
+
+
+```{r}
+source("facs_script.R")
+
+qqplots
+
+```
+
+
