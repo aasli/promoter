@@ -12,64 +12,62 @@ source("plotting_functions.R")
 
 
 ## colour scale
+## colour scale
 plot_palette<-c(
-
-"0"="#000ea2",
-"1"="#36ff7c",
-"1.7"="#ff26ac",
-"2.3"="#6ea100",
-"3"="#573991",
-"5"="#f28b00",
-"7"="#00badc",
-"9"="#e71500",
-"12"="#01c297",
-"15"="#b9a7ff",
-"25"="#ffec90",
-"35"="#002f3d",
-"60"="#ffe6da",
-"80"="#1a1800",
-"100"="#ff9f94",
-"150"="#007a5b",
-"200"="#b08057"
-)
-
-
-
-
-
-
-
-
-
+"0"="#867236",
+"0.5"="#6343c6",
+"1"="#addf42",
+"2"="#bf4dd6",
+"3"="#63d654",
+"4"="#d148a3",
+"5"="#d7ca3b",
+"6"="#6e74cc",
+"7"="#5c8f38",
+"9"="#77397a",
+"10"="#74dc9e",
+"12"="#cf466b",
+"14"="#76d5d7",
+"16"="#de4e34",
+"18"="#8cadd1",
+"20"="#d6913d",
+"23"="#4b5e7d",
+"25"="#cad17b",
+"27"="#d292c6",
+"30"="#435738",
+"45"="#98432a",
+"60"="#5b957b",
+"100"="#7c4a51",
+"200"="#ccccb0",
+"fry70"="black",
+"no repressor"="black",
+"tdh3"="blue")
 
 
 
 # reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
-t0p1_file<-"180129_mediaTDDR/mediat0"
-t1p1_file<-"180129_mediaTDDR/mediat1(5h)"
-t2p1_file<-"180129_mediaTDDR/mediat2(21h)"
-#t3p1_file<-"180129_vph_tup1_tddr/t3"
+t0p1_file<-"180220_mediaTDDR/glycerol(24h)"
+t1p1_file<-"180220_mediaTDDR/glycerol(24h)/controls"
 pattern_read<-"Specimen_001"
 
-length_samples<-68
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/january18/180129_mediaTDDR" # for saving plots
-xlabel<-expression(paste("aTc[ng/",mu,"L]", sep = "")) 
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/feb18/180220_mediaTDDRglycerol" # for saving plots
+xlabel<-expression(paste("aTc[ng/mL]", sep = "")) 
 
 starting_well<-1
-wells_per_sample<-17
+wells_per_sample<-24
 
-experiment_doses<-c(0,1,1.7,2.3,3,5,7,9,12,15,25,35,60,80,100,150,200)
+experiment_doses<-c(0,0.5,1,2,3,4,5,6,7,9,10,12,14,16,18,20,23,25,27,30,45,60,100,200)
 columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
 
 
-strain_names<-c("2561_ethanol","2561_glycerol","2561_sd","2561_sdproline") # all of them are just one strain, FRY2561
-time_points<-c("0h","5h","21h")
+strain_names<-c("2561","2562","70","2551","2683") # all of them are just one strain, FRY2561
+time_points<-c("24h")
 
-label_list<- c("2op NF, ethanol",
-               "2op NF, glycerol",
-               "2op NF, sd",
-               "2op NF, sd proline"
+label_list<- c("2op NF",
+               "2op pAct1",
+               "fry70",
+               "2551",
+               "2683"
                )
 
 names(label_list)<-strain_names
@@ -97,16 +95,16 @@ cols_descriptives<-3
 #---------------------------------------------------------------------------------------------------------------
 ## smoothed dose response curves of the strains you want
 
-descriptive_sequence<-c(1:4) #pick the strains at given timepoints
-label_list_smooth<-label_list[c(1:4)]
-timepoint_used<-4
-number_of_timepoints<-3
+descriptive_sequence<-c(1:2) #pick the strains at given timepoints
+label_list_smooth<-label_list[c(1:2)]
+timepoint_used<-1
+number_of_timepoints<-1
 ncol_legend_smooth<-2
 statistic_to_use<-1 #1 is median, 2 is mean
 scale_x_breaks_smooth<-experiment_doses
 scale_x_labels_smooth<-experiment_doses
 legend_title_smooth<-"Strain"
-plot_title_smooth<-"Dose Response Curves, 0h"
+plot_title_smooth<-"Dose Response Curves, 21h"
 xlab_smooth<-xlabel
 ylab_smooth<-"Fluorescence (a.u.)"
 legend_direction_smooth<-"vertical"
@@ -137,18 +135,23 @@ width_size<-15
 
 doses_histogram<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
 
-labels_histogram<-c("0","1","1.7","2.3","3","5","7","9","12","15","25","35","60","80","100","150","200") 
+labels_histogram<-c("0","0.5","1","2","3","4","5","6","7","9","10","12",
+                    "14","16","18","20","23","25","27","30","45","60","100","200","fry70","tdh3",
+                    "no repressor") 
 breaks_histogram<-labels_histogram
 
 dose_column<-4 #the column with doses 
 citrine_column<-3 # column with citrine measurement
+
+control_sequence<-c(3,4,5)
+control_labels<-c("fry70","no repressor","tdh3")
 
 size_histogram<- 1.3 # size of the lines
 legend_title_histogram<-xlabel
 legend_ncol_histogram<-2
 legend_position_histogram<-c(0.7,0.8)
 xlimits_histogram<-c(0,60000)
-ylimits_histogram<-c(0,0.0002)
+ylimits_histogram<-c(0,0.0005)
 
 grid_labels_histograms<-time_points # labels for the plots in the 2x2 grid
 
@@ -157,7 +160,7 @@ width_histograms<-15
 #---------------------------------------------------------------------------------------------------------------
 
 ## descriptive plots
-palette<-c("0h"="orange","5h"="red", "21h"="purple")
+palette<-c("24h"="purple")
 colour_labels<-time_points
 scale_x_breaks<-experiment_doses
 ylab_title<-"Fluorescence (a.u.)"
@@ -172,12 +175,12 @@ width_descriptives<-15
 #----------------------------------------------------------------------------------------------------------
 
 ## sigmoid fits
-descriptives_to_use<-c(9:12)
-labels_to_use<-c(1:4)
-colour_palette<-c("red","blue","grey","purple") # define the colour palette for plotting
+descriptives_to_use<-c(1,2)
+labels_to_use<-c(1,2)
+colour_palette<-c("red","blue") # define the colour palette for plotting
 # define the plot title, xlabel
-plot_title<-"Dose Response Curves, 21h"
-xlabel<-expression(paste("aTc[ng/",mu,"L]"))
+plot_title<-"Dose Response Curves, 24h"
+xlabel<-expression(paste("aTc[ng/mL]"))
 
 # define starting points for the fitting for each curve: c(a,b,c,d)
 # a is the upper asymptote, b is the steepest slope, c is the x axis value at b, d is the lower 
@@ -185,20 +188,16 @@ xlabel<-expression(paste("aTc[ng/",mu,"L]"))
 # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
 list_of_starting_points<-list(
   c(30000,0.01,7,10000),
-  c(20000,0.01,27,5000),
-  c(45000,0.01,9,5000),
-  c(50000,0.01,5,5000)
+  c(20000,0.01,27,5000)
 )
 
-time_point_sigmoid<-"21h"
+time_point_sigmoid<-"24h"
 height_sigmoid<-10
 width_sigmoid<-15
 #----------------------------------------------------------------------------------------------------------
 ## size vs. induction plots
 
-palette_density<-c("0"="#a2f1f6","1"="#80e8a1","3"="#76e170","5"="#94da61","7"="#b8d353","9"="#cdb745",
-           "15"="#c67b38","25"="#bf3b2c","35"="#b82149","60"="#b11679","100"="#a90caa",
-           "200"="#6703a3")
+palette_density<-plot_palette
 x_breaks_density<-labels_histogram
 legend_title_density<-xlabel
 ncol_legend_density<-2
@@ -223,7 +222,7 @@ width_density<-15
 ```{r}
 source("facs_script.R")
 
-all_plots[[1]]
+histograms
 
 ```
 

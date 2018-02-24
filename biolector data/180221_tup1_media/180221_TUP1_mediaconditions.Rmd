@@ -1,0 +1,262 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+data<-read.csv("180221_TUP1_toxicity_media.csv")
+```
+
+```{r}
+colnames(data)<-c("reading","well","content","description","filter","time","amplitude","phase",
+                  "amplitude2","temperature","humidity","O2","CO2","comments")
+
+data1<-subset(data,data$filter==1)
+data2<-subset(data,data$filter==2)
+data3<-subset(data,data$filter==3)
+
+data_to_use<-data2
+
+eth_70<-subset(data_to_use,
+            data_to_use$well %in% c("A01","B01","C01","D01"))
+
+pro_70<-subset(data_to_use,
+            data_to_use$well %in% c("A04","B04","C04","D04"))
+
+gly_70<-subset(data_to_use,
+            data_to_use$well %in% c("A07","B07","C07","D07"))
+
+eth_2679<-subset(data_to_use,
+            data_to_use$well %in% c("A02","B02","C02","D02"))
+
+pro_2679<-subset(data_to_use,
+            data_to_use$well %in% c("A05","B05","C05","D05"))
+
+gly_2679<-subset(data_to_use,
+            data_to_use$well %in% c("A08","B08","C08","D08"))
+
+eth_2680<-subset(data_to_use,
+            data_to_use$well %in% c("A03","B03","C03","D03"))
+
+pro_2680<-subset(data_to_use,
+            data_to_use$well %in% c("A06","B06","C06","D06"))
+
+gly_2680<-subset(data_to_use,
+            data_to_use$well %in% c("E01","E02","E03","E04"))
+
+```
+
+```{r}
+library(reshape2)
+names_strains<-c("FRY70","VPH1","ACT1")
+
+list_eth<-list(eth_70,eth_2679,eth_2680)
+list_pro<-list(pro_70,pro_2679,pro_2680)
+list_gly<-list(gly_70,gly_2679,gly_2680)
+
+names(list_eth)<-names_strains
+names(list_pro)<-names_strains
+names(list_gly)<-names_strains
+
+eth<-melt(list_eth, id=c("amplitude","well","time"))
+eth<-droplevels(eth)
+
+pro<-melt(list_pro, id=c("amplitude","well","time"))
+pro<-droplevels(pro)
+
+gly<-melt(list_gly, id=c("amplitude","well","time"))
+gly<-droplevels(gly)
+```
+
+```{r}
+offset=TRUE # set to true if you want to offset everything such that the minimum of all the curves will be 1.  
+
+
+if(offset==TRUE){
+f_offset<-function(dataframe){
+for(i in unique(dataframe$well)){ 
+  # this function calculates the minimum of each growth curve per well.
+  # then substracts (this value-1) from all measurements to move the min of the curve to 1.
+
+  well_group<-dataframe[which(dataframe$well==i),] # select all measurements of a given well
+  minimum<-min(well_group$amplitude) # find minimum
+ 
+  for(j in c(1:nrow(well_group))){ # for each row in the selection
+    well_group[j,1]<-((well_group[j,1]-minimum)+1) # subtract the min and add 1.
+  }
+  
+  dataframe[which(dataframe$well==i),]<-well_group # replace the original dataframe with these new values.
+  
+}
+  return(dataframe)
+}
+
+eth<-f_offset(eth)
+pro<-f_offset(pro)
+gly<-f_offset(gly)
+
+}
+```
+
+
+```{r}
+library(ggplot2)
+
+average=TRUE # to plot the average of all 4 wells with an sd ribbon, set to TRUE
+
+f_average<-function(frame){ 
+  # this function is called inside the f_mean_sd function
+  # the input is a row of four columns, and this function calculates the mean and sd
+  # then adds these vallues as the 5th and 6th columns. 
+  # needs to be applied to a dataframe rowbyrow to work. 
+  
+    mean<-mean(frame[c(1:4)])
+    sd<-sd(frame[c(1:4)])
+    frame[5]<-mean
+    frame[6]<-sd
+    frame<-as.vector(frame)
+    
+    return(frame)
+}
+
+f_mean_sd<-function(dataframe){
+    # this function calculates the average of 4 wells and the sd. 
+    # input needs to be a dataframe with at least columns well, time and amplitude.
+  
+  wells<-unique(dataframe$well) # the wells to take into account for the calculation
+  first<-dataframe[which(dataframe$well==wells[[1]]),1] # amplitude measurements of well 1
+  second<-dataframe[which(dataframe$well==wells[[2]]),1] # 2 
+  third<-dataframe[which(dataframe$well==wells[[3]]),1]  # 3 and
+  fourth<-dataframe[which(dataframe$well==wells[[4]]),1] # 4
+  
+  time<-dataframe[which(dataframe$well==wells[[1]]),3] # time measurements of well 1, for plotting purposes. Otherwise I have no x axis to plot against. 
+  
+  frame_of_amplitudes<-cbind(first,second,third,fourth) # put together the four measurements per timepoint.
+  
+  # apply the averaging function to the frame you just created. 
+  average_frame<-t(as.data.frame(apply(frame_of_amplitudes,1,f_average))) 
+    
+  average_frame<-cbind(average_frame,time) # add the time measurements to the frame
+  
+  colnames(average_frame)<-c("1","2","3","4","mean","sd","time")
+  
+  return(average_frame)
+}
+  
+  
+
+f_plot<-function(melted_list){
+  # this function plots either the raw data, the offset data or the averaged data based on the input. 
+  # for averaged data, average=TRUE should be set. 
+  # input is a dataframe containing at least time, L1 and amplitude columns
+
+  # first the dataframe is separated into the strains.  
+  vph1<-melted_list[which(melted_list$L1=="VPH1"),]
+  vph1<-droplevels(vph1)
+  act1<-melted_list[which(melted_list$L1=="ACT1"),]
+  act1<-droplevels(act1)
+  fry70<-melted_list[which(melted_list$L1=="FRY70"),]
+  fry70<-droplevels(fry70)
+
+  list_of_frames<-list(vph1,act1,fry70) # for averaging, all frames are put into a list
+  averages<-lapply(list_of_frames,f_mean_sd) # this creates the averaged data
+
+  if(average==FALSE){ # for plotting raw or offset data
+    plot<-ggplot()+
+  
+      geom_line(data=vph1,aes(x=time,y=amplitude, colour=well),size=1, show.legend = FALSE) +
+      geom_line(data=act1,aes(x=time,y=amplitude, colour=well),size=1, show.legend = FALSE) +
+      geom_line(data=fry70,aes(x=time,y=amplitude, colour=well),size=1, show.legend = FALSE) +
+      geom_point(aes(x=10000,y=10,colour="FRY70")) +
+      geom_point(aes(x=10000,y=10,colour="VPH1")) +
+      geom_point(aes(x=10000,y=10,colour="ACT1")) +
+      scale_colour_manual(values=c("A01"="blue","B01"="blue","C01"="blue","D01"="blue",
+                                   "A02"="red","B02"="red","C02"="red","D02"="red",
+                                   "A03"="green","B03"="green","C03"="green","D03"="green",
+                                   "A04"="blue","B04"="blue","C04"="blue","D04"="blue",
+                                   "A05"="red","B05"="red","C05"="red","D05"="red",
+                                   "A06"="green","B06"="green","C06"="green","D06"="green",
+                                   "A07"="blue","B07"="blue","C07"="blue","D07"="blue",
+                                   "A08"="red","B08"="red","C08"="red","D08"="red",
+                                   "E01"="green","E02"="green","E03"="green","E04"="green",
+                                   "FRY70"="blue","VPH1"="red","ACT1"="green")) +
+      xlim(0,350) +
+      theme_bw()
+  
+  }
+
+  if(average==TRUE) { # for plotting averaged data
+    vph1<-as.data.frame(averages[[1]]) # get individual frames from the list averages
+    act1<-as.data.frame(averages[[2]])
+    fry70<-as.data.frame(averages[[3]])
+    
+    alpha_value<-0.5
+  
+    plot<-ggplot()+
+  
+    geom_ribbon(data=vph1,aes(x=time,ymin=(mean-(sd/2)),ymax=(mean+(sd/2))),
+                fill="pink",alpha=alpha_value,size=1, show.legend = F) +
+    geom_line(data=vph1,aes(x=time,y=mean, colour="VPH1"),size=1, show.legend = T) +
+  
+    geom_ribbon(data=act1,aes(x=time,ymin=(mean-(sd/2)),ymax=(mean+(sd/2))),
+                fill="lightgreen",alpha=alpha_value,size=1, show.legend = F) +
+    geom_line(data=act1,aes(x=time,y=mean, colour="ACT1"),size=1, show.legend = T) +  
+  
+    geom_ribbon(data=fry70,aes(x=time,ymin=(mean-(sd/2)),ymax=(mean+(sd/2))),
+                fill="lightblue",alpha=alpha_value,size=1, show.legend = F) +
+    geom_line(data=fry70,aes(x=time,y=mean, colour="FRY70"),size=1, show.legend = T) +
+    
+    scale_colour_manual(values=c("FRY70"="blue","VPH1"="red","ACT1"="green")) +
+      
+    guides(fill=guide_legend(label = FALSE)) +
+    theme(legend.position = "none") +
+    xlim(0,350) +
+    theme_bw() +
+    ylab("Amplitude")
+  
+}
+
+
+
+return(plot)
+
+}
+
+# get a plot for each condition
+plot_eth<-f_plot(eth)
+plot_pro<-f_plot(pro)
+plot_gly<-f_plot(gly)
+
+plot_list<-list(plot_eth,plot_pro,plot_gly) # make a list for saving
+
+names<-c("eth","pro","gly") # make a list of names for saving
+
+if(offset==TRUE){ # to add "_offset" at the end of the name if saving offset data
+for(i in names){
+  name<-paste(i,"_offset",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+if(average==TRUE){ # to add "_average" at the end of the name if saving averaged data
+for(i in names){
+  name<-paste(i,"_average",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+f_save<-function(plot,name){
+  
+  print(plot)
+  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/feb18/180221_TUP1_biolector")
+}
+
+mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
+
+```
+

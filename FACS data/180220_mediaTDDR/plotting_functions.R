@@ -87,7 +87,7 @@ f_sizeplots_grid<- function(plot_list,name,legend_label,labels_for_grid){
 
 f_geom_histogram <- function(dataframe,control_sequence, dose_column, citrine_column, labels_histogram, 
                              doses_histogram,size,breaks,legend_title,legend_ncol,
-                             legend_position,xlimits,ylimits,control_list, labels_controls) {
+                             legend_position,xlimits,ylimits,labels_controls) {
   
   dataframe<-as.data.frame(dataframe)
 
@@ -104,10 +104,10 @@ f_geom_histogram <- function(dataframe,control_sequence, dose_column, citrine_co
   
   
   for(i in control_sequence) {
-    control<-as.data.frame(control_list[i])
+    control<-as.data.frame(df_list[i])
     single_layer<- geom_density(
       aes_(x=control[,citrine_column],
-           colour=labels_controls[i]),size=size) 
+           colour=labels_controls[i-2]),size=size) 
     
     final_plot<- final_plot + single_layer
     
@@ -142,7 +142,9 @@ f_geom_histogram <- function(dataframe,control_sequence, dose_column, citrine_co
 f_histogram_grid<- function(plot_list,name,legend_label,grid_labels){
   
   string_match<-(grep(name,names(plot_list),value = FALSE))
+  print(string_match)
   strain_label<-grep(name,names(legend_label),value = FALSE)
+  print(strain_label)
  
   cowplot::plot_grid(plot_list[[string_match[1]]] + 
                        ggtitle(legend_label[[strain_label[1]]]) +
@@ -441,7 +443,7 @@ function_curve_fitting<-
   # the function creates a list of fitted values, one for each "frame" input. 
   function(frame,list_of_starting_points){
     f_sigmoid <- function(params, x) {
-      (params[4] + (params[1] / (1 + exp(params[2] * (x - params[3])))))
+      ((params[1] / (1 + exp(params[2] * (x - params[3])))))
     }
     
     x = frame[,8]
@@ -450,10 +452,9 @@ function_curve_fitting<-
     a<-list_of_starting_points[[1]]
     b<-list_of_starting_points[[2]]
     c<-list_of_starting_points[[3]]
-    d<-list_of_starting_points[[4]]
     
     # fitting
-    fitmodel <- nlsLM(y ~ (d+ (a/(1 + exp(b * (x-c))))), start=list(a=a,b=b,c=c, d=d), 
+    fitmodel <- nlsLM(y ~ ((a/(1 + exp(b * (x-c))))), start=list(a=a,b=b,c=c), 
                       weights = (1/frame[,5]))
     
     # get the coefficients 

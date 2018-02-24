@@ -2,13 +2,12 @@
 
 # read fcs files
 t0p1<-f_read(t0p1_file,pattern_read)
-controls<-f_read(control_file, pattern_read)
+t1p1<-f_read(t1p1_file,pattern_read)
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
-df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,columns_to_include))
-           #f_df_list(t3p1,starting_well,wells_per_sample,experiment_doses,columns_to_include))
+df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
+           f_df_list(t1p1,starting_well,2,c(0,200),columns_to_include))
 
-controls_list<-c(f_df_list(controls,starting_well,1,0,columns_to_include))
 #----------------------------------------------------------------------------------
 ##create names for the dataframe list
 
@@ -19,7 +18,6 @@ for (i in time_points){
 }
 
 names(df_list)<-df_list_names
-names(controls_list)<-controls_names
 
 #----------------------------------------------------------------------------------
 # size subsetting, if wanted
@@ -37,8 +35,7 @@ df_list<-size_subset_df
 
 # descriptive stats
 
-descriptives<-c(lapply(df_list,f_descriptives,column=cols_descriptives),
-                lapply(controls_list,f_descriptives,column=cols_descriptives))
+descriptives<-c(lapply(df_list,f_descriptives,column=cols_descriptives))
 
 #----------------------------------------------------------------------------------
 
@@ -87,22 +84,22 @@ mapply(f_save,grid_plots_size,names(grid_plots_size),
 
 ## histograms
 
-histograms<-mapply(f_geom_histogram,df_list,
+histograms<-mapply(f_geom_histogram,df_list[c(1:2)],
                    MoreArgs = list(control_sequence,dose_column,
                                    citrine_column,labels_histogram,
                                    doses_histogram,size_histogram,breaks_histogram,
                                    legend_title_histogram,legend_ncol_histogram,
                                    legend_position_histogram,xlimits_histogram,
-                                   ylimits_histogram, controls_list, label_list_controls),
+                                   ylimits_histogram,control_labels),
                    USE.NAMES = TRUE, SIMPLIFY = FALSE)
 
-names(histograms)<-strain_names
+names(histograms)<-strain_names[c(1:2)]
 ### making the grids
 
 
-name_list_histogram<-strain_names # should contain one name per strain that you want
+name_list_histogram<-strain_names[c(1:2)] # should contain one name per strain that you want
 #to create a grid for.
-label_list_histogram<-label_list # should contain one label per grid, 
+label_list_histogram<-label_list[c(1:2)] # should contain one label per grid, 
 #and the order of the labels must correspond to the order in which the strains appear in name_list.
 names(label_list_histogram)<-name_list_histogram
 
@@ -122,16 +119,7 @@ mapply(f_save,grid_plots_histogram,names(grid_plots_histogram),
 
 
 
-control_histogram<-f_histogram_comparison_controls(controls_list,control_sequence,
-                                                   column_to_plot_controls,
-                                                    label_list_controls,size_histogram, 
-                                                   "",legend_ncol_histogram,
-                                                   legend_position_histogram,control_plot_title,
-                                                   xlimits_controls,ylimits_controls, plot_palette)
 
-f_save(control_histogram,paste("control_histogram_mTFP_interference.jpeg",time_point_smooth,sep = "_"),
-       output_folder=output_path,output_path="", 
-       height=height_histograms, width=width_histograms)
 
 #----------------------------------------------------------------------------------
 
@@ -194,13 +182,16 @@ mapply(f_save,grid_plots_density,names(grid_plots_density),
 #sigmoid curve fitting
 
 library("minpack.lm")
-#define x axis doses and the labels for plotting
-doses_experiment<-frame_list[[1]][,8]
-labels_x_axis<-c(0,frame_list[[1]][c(2:nrow(frame_list[[i]])),8])
+
 
 # pick which strains/time_points you want to plot, and their labels
 frame_list<-descriptives[descriptives_to_use]
 label_list_sigmoid<-label_list[labels_to_use]
+
+#define x axis doses and the labels for plotting
+doses_experiment<-frame_list[[1]][,8]
+labels_x_axis<-c(0,frame_list[[1]][c(2:nrow(frame_list[[i]])),8])
+
 
 
 # replace 0 values in the doses with 0.1

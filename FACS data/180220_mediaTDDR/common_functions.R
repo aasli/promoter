@@ -5,7 +5,7 @@
 library(flowCore)
 
 f_read<-function(working_directory, pattern){
-working_directory<-paste("C:/Users/aslia/Desktop/pisi/ETH/master project/FACS data/",
+working_directory<-paste("C:/repos/promoter/FACS data/",
                          working_directory,sep="")
 setwd(working_directory)
 flowset<-read.flowSet(pattern=pattern)
@@ -29,7 +29,7 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns,length_
     dose<-doses[[which(k==c(i:(i+wells_per_sample-1)))]]
     dose_column<-as.data.frame(rep(dose,nrow(sample)))
     sample<-cbind(sample,dose_column)
-    colnames(sample)[5]<-"Dose"
+    colnames(sample)[4]<-"Dose"
     
     strain<-rbind(strain,sample)
     }
