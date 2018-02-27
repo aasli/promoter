@@ -211,7 +211,7 @@ f_plot<-function(melted_list){
       
     guides(fill=guide_legend(label = FALSE)) +
     theme(legend.position = "none") +
-    xlim(0,350) +
+    xlim(0,NA) +
     theme_bw() +
     ylab("Amplitude")
   
@@ -257,6 +257,11 @@ f_save<-function(plot,name){
 }
 
 mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
+
+```
+
+
+```{r}
 
 ```
 
