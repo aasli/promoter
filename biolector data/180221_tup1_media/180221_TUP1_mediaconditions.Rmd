@@ -83,7 +83,7 @@ for(i in unique(dataframe$well)){
   minimum<-min(well_group$amplitude) # find minimum
  
   for(j in c(1:nrow(well_group))){ # for each row in the selection
-    well_group[j,1]<-((well_group[j,1]-minimum)+1) # subtract the min and add 1.
+    well_group[j,1]<-((well_group[j,1]/minimum)) # subtract the min and add 1.
   }
   
   dataframe[which(dataframe$well==i),]<-well_group # replace the original dataframe with these new values.
@@ -234,7 +234,7 @@ names<-c("eth","pro","gly") # make a list of names for saving
 
 if(offset==TRUE){ # to add "_offset" at the end of the name if saving offset data
 for(i in names){
-  name<-paste(i,"_offset",sep = "")
+  name<-paste(i,"_offset_divide",sep = "")
   names[which(names==i)]<-name
   
 }
