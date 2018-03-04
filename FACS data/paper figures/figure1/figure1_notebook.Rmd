@@ -152,57 +152,68 @@ final_plot +
 
 ```
 
-```{r}
-# creating the individual plots
+```{r ethanol}
+# for ethanol I had to lower the higher controls manually, and then add a break to the y axis in illustrator. 
 
+# creating the individual plots
+library("minpack.lm")
 ## plotting the sigmoid curves.
 
 f_plot_sigmoid_curves_single<-
   # plot the fitted line and the individual data points. 
-  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control){
-    
+  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim){
+    formatter<-function(x){x/1000}
     final_plot<-ggplot() 
     # plot the lines
     for (i in c(1:length(fit_list))){
       single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
-                                         colour=label_list_sigmoid[[i]]),size=1)
+                                         colour=label_list_sigmoid[[i]]),size=2)
       final_plot<-final_plot+single_layer_line
     }
     
     # plot the individual data points
     for (j in c(1:length(frame_list))){
       single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
-                                           colour=label_list_sigmoid[[j]]))   
+                                           colour=label_list_sigmoid[[j]]), size=2.5)   
       final_plot<-final_plot+single_layer_point
     }
     
     # plot the controls
     
-    # for(k in c(1:length(control_frame_list))){
-    #   frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
-    #   
-    #   single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
-    #                                        colour=label_list_control[[k]]))  
-    #   ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
-    #                                           ymax=frame[,1]-(frame[,6]*frame[,1]),
-    #                                           x=x_values))
-    #   
-    #   final_plot<-final_plot+single_layer_control 
-    #   final_plot<-final_plot +ribbon_layer_control
-    #   
-    # }
+    for(k in c(1:length(control_frame_list))){
+      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
+
+      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+                                             linetype=label_list_control[[k]]), colour="black", 
+                                        size=2)
+      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
+                                              x=x_values))
+
+      final_plot<-final_plot+single_layer_control
+     # final_plot<-final_plot +ribbon_layer_control
+
+    }
     pretty_plot<-final_plot +
+      scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
       scale_colour_manual(values = colour_palette) +
-      scale_x_log10(breaks = doses_experiment,
-                    labels = labels_x_axis) +
+      scale_x_continuous(breaks = doses_experiment,
+                    labels = labels_x_axis, 
+                    limits = xlim, 
+                    trans = "log10") +
+      scale_y_continuous(limits = ylim, labels=c("0","5","40","45"), 
+                         breaks = c(0,5000,10000,15000)) +
       guides(colour=guide_legend(title = "Strains",nrow=2)) +
-      ggtitle(plot_title) +
+      # ggtitle(plot_title) +
       xlab(xlabel) +
-      ylab("Fluorescence (a.u.)") +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
       theme_bw() +
       theme(panel.grid.minor = element_blank(),
-            legend.direction = "horizontal", legend.position = "bottom") +
-      expand_limits(x=0.3)
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+            axis.line = element_line(size=1), 
+            axis.text = element_text(size=24),
+            axis.title = element_text(size=24)) 
     
     return(pretty_plot)
   }
@@ -212,8 +223,10 @@ descriptives_to_use<-c(1,2)
 control_descriptives_to_use<-c(3,4,5)
 labels_to_use<-c(1,2)
 dose_control<-"0"
+xlim<-c(0.3,23)
+ylim<-c(0,17000)
 
-
+colour_palette<-c("darkred","lightblue")
 list_of_starting_points<-list(
   c(7000,0.1,2,5000),
   c(7000,0.1,2,3000)
@@ -230,17 +243,21 @@ label_list_control<-label_list[control_descriptives_to_use]
 control_frame_error<-df_list[control_descriptives_to_use]
 # pick your controls
 control_frame_list<-descriptives[control_descriptives_to_use]
+for(i in c(2,3)){
+  control_frame_list[[i]][,1]<-control_frame_list[[i]][,1]-30000
+}
 
 
 #define x axis doses and the labels for plotting
-doses_experiment<-frame_list[[1]][,8]
-labels_x_axis<-c(0,frame_list[[1]][c(2:nrow(frame_list[[1]])),8])
+doses_experiment<-c(0.3,0.5,1,3,5,10,20,30)
+labels_x_axis<-c("0","0.5","1","3","5","10","20","30")
 
 
 # replace 0 values in the doses with 0.1
 for(i in c(1:length(frame_list))){
   frame_list[[i]][1,8]<-0.3
 }
+
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
@@ -254,9 +271,258 @@ sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_start
 
 
 sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list, control_frame_list,
-                                    dose_control, label_list_control)
+                                    dose_control, label_list_control, xlim, ylim)
 
 sigmoid_plot
+
+ggsave(sigmoid_plot,filename =  "ethanol.jpeg", path=output_path, height=10, width=15)
 ```
 
 
+```{r glycerol}
+# creating the individual plots
+library("minpack.lm")
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves_single<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim){
+    formatter<-function(x){x/1000}
+    final_plot<-ggplot() 
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=2)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]), size=2.5)   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # plot the controls
+    
+    for(k in c(1:length(control_frame_list))){
+      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
+
+      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+                                             linetype=label_list_control[[k]]), colour="black", 
+                                        size=2)
+      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
+                                              x=x_values))
+
+      final_plot<-final_plot+single_layer_control
+     # final_plot<-final_plot +ribbon_layer_control
+
+    }
+    pretty_plot<-final_plot +
+      scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
+      scale_colour_manual(values = colour_palette) +
+      scale_x_continuous(breaks = doses_experiment,
+                    labels = labels_x_axis, 
+                    limits = xlim, 
+                    trans = "log10") +
+      scale_y_continuous(limits = ylim, labels=formatter) +
+      guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      # ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+      theme_bw() +
+      theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+            axis.line = element_line(size=1), 
+            axis.text = element_text(size=24),
+            axis.title = element_text(size=24)) 
+    
+    return(pretty_plot)
+  }
+
+
+descriptives_to_use<-c(6,7)
+control_descriptives_to_use<-c(8,9,10)
+labels_to_use<-c(6,7)
+dose_control<-"0"
+xlim<-c(0.3,NA)
+ylim<-c(0,NA)
+
+colour_palette<-c("darkred","lightblue")
+list_of_starting_points<-list(
+  c(7000,0.1,2,5000),
+  c(7000,0.1,2,3000)
+  # c(7000,0.1,2,5000),
+  # c(7000,0.1,2,3000),
+  # c(10000,0.3,6,3000),
+  # c(10000,0.5,2,5000)
+)
+# pick which strains/time_points you want to plot, and their labels
+frame_list<-descriptives[descriptives_to_use]
+label_list_sigmoid<-label_list[labels_to_use]
+label_list_control<-label_list[control_descriptives_to_use]
+
+control_frame_error<-df_list[control_descriptives_to_use]
+# pick your controls
+control_frame_list<-descriptives[control_descriptives_to_use]
+for(i in c(2,3)){
+  control_frame_list[[i]][,1]<-control_frame_list[[i]][,1]
+}
+
+
+#define x axis doses and the labels for plotting
+doses_experiment<-c(0.3,0.5,1,3,5,10,20,30,60,200)
+labels_x_axis<-c("0","0.5","1","3","5","10","20","30", "60","200")
+
+
+# replace 0 values in the doses with 0.1
+for(i in c(1:length(frame_list))){
+  frame_list[[i]][1,8]<-0.3
+}
+
+
+# generate log distributed x values for smoother line fitting. 
+library(emdbook)
+x_values<-lseq(min(frame_list[[1]][,8]),
+               max(frame_list[[1]][,8]),1000)
+
+
+# apply the fitting to each frame with its own individual starting points.
+sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
+                                 SIMPLIFY = FALSE)
+
+
+sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list, control_frame_list,
+                                    dose_control, label_list_control, xlim, ylim)
+
+sigmoid_plot
+
+ggsave(sigmoid_plot,filename =  "glycerol.jpeg", path=output_path, height=10, width=15)
+```
+
+```{r proline}
+# for proline I removed the dose 0 since we have a strange autofluorescence lowering effect of aTc. For the same reason I used controls that have 200ng/mL aTc on them and not the 0 versions like the others. 
+
+# creating the individual plots
+library("minpack.lm")
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves_single<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim){
+    formatter<-function(x){x/1000}
+    final_plot<-ggplot() 
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=2)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]), size=2.5)   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # plot the controls
+    
+    for(k in c(1:length(control_frame_list))){
+      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
+
+      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+                                             linetype=label_list_control[[k]]), colour="black", 
+                                        size=2)
+      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
+                                              x=x_values))
+
+      final_plot<-final_plot+single_layer_control
+     # final_plot<-final_plot +ribbon_layer_control
+
+    }
+    pretty_plot<-final_plot +
+      scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
+      scale_colour_manual(values = colour_palette) +
+      scale_x_continuous(breaks = doses_experiment,
+                    labels = labels_x_axis, 
+                    limits = xlim, 
+                    trans = "log10") +
+      scale_y_continuous(limits = ylim, labels=formatter) +
+      guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      # ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+      theme_bw() +
+      theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+            axis.line = element_line(size=1), 
+            axis.text = element_text(size=24),
+            axis.title = element_text(size=24)) 
+    
+    return(pretty_plot)
+  }
+
+
+descriptives_to_use<-c(11,12)
+control_descriptives_to_use<-c(13,14,15)
+labels_to_use<-c(11,12)
+dose_control<-"200"
+xlim<-c(0.5,32)
+ylim<-c(0,NA)
+
+colour_palette<-c("darkred","lightblue")
+list_of_starting_points<-list(
+  c(10000,0.5,2),
+  c(10000,0.3,3)
+  # c(7000,0.1,2,5000),
+  # c(7000,0.1,2,3000),
+  # c(10000,0.3,6,3000),
+  # c(10000,0.5,2,5000)
+)
+# pick which strains/time_points you want to plot, and their labels
+frame_list<-descriptives[descriptives_to_use]
+label_list_sigmoid<-label_list[labels_to_use]
+label_list_control<-label_list[control_descriptives_to_use]
+
+control_frame_error<-df_list[control_descriptives_to_use]
+# pick your controls
+control_frame_list<-descriptives[control_descriptives_to_use]
+for(i in c(2,3)){
+  control_frame_list[[i]][,1]<-control_frame_list[[i]][,1]
+}
+
+
+#define x axis doses and the labels for plotting
+doses_experiment<-c(0.5,1,3,5,10,20,30,60,200)
+labels_x_axis<-c("0.5","1","3","5","10","20","30", "60","200")
+
+
+# replace 0 values in the doses with 0.1
+for(i in c(1:length(frame_list))){
+  frame_list[[i]]<-frame_list[[i]][-1,]
+}
+
+
+# generate log distributed x values for smoother line fitting. 
+library(emdbook)
+x_values<-lseq(min(frame_list[[1]][,8]),
+               max(frame_list[[1]][,8]),1000)
+
+
+# apply the fitting to each frame with its own individual starting points.
+sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
+                                 SIMPLIFY = FALSE)
+
+
+sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list, control_frame_list,
+                                    dose_control, label_list_control, xlim, ylim)
+
+sigmoid_plot
+
+ggsave(sigmoid_plot,filename =  "proline.jpeg", path=output_path, height=10, width=15)
+```

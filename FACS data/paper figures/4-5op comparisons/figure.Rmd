@@ -1,0 +1,186 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r read flowSets}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+t0p1_file<-"180116_operator&TetR_comparisons/p1"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/4-5op comparisons"
+# create folders named size, svf, histograms, boxplots under this directory. 
+
+columns<-c(3,6,7) # usually fsc-h, ssc-h, and 488C-h
+fsch_column<-1 # the index in "columns"
+ssch_column<-2 # the index in "columns"
+size_subset<-FALSE # set to true to subset based on fsch/ssch
+fsc_h_lower_limit<-50000
+fsc_h_upper_limit<-73000
+ssc_h_lower_limit<-0
+ssc_h_upper_limit<-200000
+
+
+## naming & labels
+
+strain_names<-c("2551","2564","2565","2562","2573","2575","2577","2566",	
+"2598","2599","2601","2602","2603","2612","2643_1","2643_2","2644_1","2644_2","2645_1","2645_2",
+"2647_1","2647_2","2648_1","2648_2","2649_1","2649_2","2650_1","2650_2","2651_1","2651_2","2652_1","2652_2",
+"2653_1","2653_2","2654_1","2654_2","2655_1","2655_2",						
+"2656_1","2656_2","2657_1","2657_2","2658_1","2658_2","2659_1","2659_2","2660_1","2660_2","2661_1","2661_2",
+"2562","2512","2525","2642","2641","2662_1","2662_2","2646",				
+"70","2420","2569",									
+"2","68"										
+	)
+
+label_list<-c(
+"2op", #1 
+"3op", #2
+"4op", #3 
+"2op + pAct1_TetR_tCyc1", #4 
+"3op + pAct1_TetR_tCyc1", #5
+"4op + pAct1_TetR_tCyc1", #6
+"5op + pAct1_TetR_tCyc1", #7
+"5op", #8
+
+
+"4op, RAP1+A", #9 
+"4op, G + GCR1(upstream)", #10
+"4op, GCR1(downstream)full", #11
+"4op TATA box: TATAAAGA", #12
+"4op TATA box: TATAAATA", #13
+"4op RAP1+AAC, GCR1(downstream)full", #14
+"4op RAP1+AAC, G+GCRu, GCRd(full)_1", #15 chosen
+"4op RAP1+AAC, G+GCRu, GCRd(full)_2", #16 
+"4op, rep.unmod.RAP1+GCR1_1", #17 chosen
+"4op, rep.unmod.RAP1+GCR1_2", #18 
+"4op, rep.mod.RAP1+GCR1_1", #19 chosen
+"4op, rep.mod.RAP1+GCR1_2", #20
+"4op, RAP1+A + pAct1_TetR_tCyc1_1 ", #21 chosen
+"4op, RAP1+A + pAct1_TetR_tCyc1_2", #22
+"G + GCR1(upstream) + pAct1_TetR_tCyc1_1", #23 chosen
+"G + GCR1(upstream) + pAct1_TetR_tCyc1_2", #24
+"4op, GCR1(downstream)full + pAct1_TetR_tCyc1_1", #25 chosen
+"4op, GCR1(downstream)full + pAct1_TetR_tCyc1_2", #26
+"4op TATA box: TATAAAGA + pAct1_TetR_tCyc1_1", #27 chosen
+"4op TATA box: TATAAAGA + pAct1_TetR_tCyc1_2", #28
+"4op TATA box: TATAAATA + pAct1_TetR_tCyc1_1", #29 chosen
+"4op TATA box: TATAAATA + pAct1_TetR_tCyc1_2", #30
+"4op RAP1+AAC, GCR1(downstream)full + pAct1_TetR_tCyc1_1", #31 chosen
+"4op RAP1+AAC, GCR1(downstream)full + pAct1_TetR_tCyc1_2", #32
+"4op RAP1+AAC, GCRd(full) + pAct1_TetR_tCyc1_1", #33 chosen
+"4op RAP1+AAC, GCRd(full) + pAct1_TetR_tCyc1_2", #34
+"4op, rep.unmod.RAP1+GCR1 + pAct1_TetR_tCyc1_1", #35 chosen  
+"4op, rep.unmod.RAP1+GCR1 + pAct1_TetR_tCyc1_2", #36 
+"4op, rep.mod.RAP1+GCR1 + pAct1_TetR_tCyc1_1", #37 chosen
+"4op, rep.mod.RAP1+GCR1 + pAct1_TetR_tCyc1_2", #38
+
+"5op (RAP1+A, GCRd full) + pAct1_TetR_tCyc1_1", #39 chosen 
+"5op (RAP1+A, GCRd full) + pAct1_TetR_tCyc1_2", #40
+"5op (RAP1+A, GCRd full&repRAP1) + pAct1_TetR_tCyc1_1", #41  chosen
+"5op (RAP1+A, GCRd full&repRAP1) + pAct1_TetR_tCyc1_2", #42
+"5op (RAP1+A, GCRd full&repRAP1GCR1) + pAct1_TetR_tCyc1_1", #43 chosen 
+"5op (RAP1+A, GCRd full&repRAP1GCR1) + pAct1_TetR_tCyc1_2", #44
+"5op (RAP1+A, GCRd full)_1", #45 chosen
+"5op (RAP1+A, GCRd full)_2", #46 
+"5op (RAP1+A, GCRd full&repRAP1)_1", #47 chosen
+"5op (RAP1+A, GCRd full&repRAP1)_2", #48
+"5op (RAP1+A, GCRd full&repRAP1GCR1)_1", #49 chosen
+"5op (RAP1+A, GCRd full&repRAP1GCR1)_2", #50
+
+"2op(s) + pAct1_TetR_NLS", #51
+"2op(s) + pAct1_TetR_NLS-GST", #52
+"2op(s) + pAct1_TetR_NLS-GST-NLS", #53
+"2op(s) + pAct1_TetR_NLS-MBP", #54
+"2op(s) + pAct1_TetR_NLS-MBP-NLS", #55
+"2op(s) + pAct1_TetR_NLS-TUP1_1", #56 chosen
+"2op(s) + pAct1_TetR_NLS-TUP1_2", #57
+"2op(s) + pVph1_TetR_NLS-MBP-NLS", #58
+
+"fry70", #59
+"2op(s)", #60
+"pTDH3_citrine", #61
+
+"fry2", #62
+"fry68" #63
+
+)
+
+## which strains to compare:
+list_of_sequences<-list(
+  c(61,8,3,2,1),
+  c(59,7,6,5,4),
+  c(61,13,12,11,10,9,3),
+  c(59,29,27,25,23,21,6),
+  c(61,49,47,45,8),
+  c(59,43,41,39,7)
+)
+
+title_of_sequences<-c("operator placement",
+                      "operator placement_tetr",
+                      "4op modifications",
+                      "4op modifications_tetr",
+                      "5op modifications",
+                      "5op modifications_tetr"
+                      )
+
+
+
+mypalette<-c("#ffb419","#5e52e6","#a8d551","#8e00ab","#006512","#d038cc","#917f00","#ff6fe4","#144c21",
+             "#c10094","#4fdbcb","#ff4385","#009074","#c0004d","#00b9da","#b54700","#006dcb","#ff6a61",
+             "#00939a","#9f0022","#017ab5","#762700","#b5a6ff","#4d5100","#f599ff","#d6c688","#582b80",
+             "#ff91b8")
+#781e41
+#9e5b58)
+
+### boxplots
+ylimits_box<-list(c(0,100000),
+                  c(0,40000),
+                  c(0,80000),
+                  c(0,10000),
+                  c(0,100000),
+                  c(0,8000)
+                  )
+
+widths<-list(0.8,0.8,0.8,0.8,0.8,0.8)
+height_box<-10 # saving dimensions
+width_box<-15
+
+ 
+```
+
+```{r}
+
+
+## read fcs files as a flowset
+t0p1<-f_read(t0p1_file,pattern_read)
+
+#-----------------------------------------------------------------------------------------------
+
+## create the dataframe list
+df_list<-f_df_comparison(t0p1,columns,fsch_column, ssch_column, fsc_h_lower_limit,
+                fsc_h_upper_limit,ssc_h_lower_limit, ssc_h_upper_limit)
+
+names(df_list)<-strain_names
+
+#-----------------------------------------------------------------------------------------------
+## boxplots
+
+#first melt dataframes you want to put on the plot into one dataframe
+
+boxplot_frames<-lapply(list_of_sequences,f_melt, df_list, label_list,"488 [C]-H" )
+
+boxplots<-mapply(f_boxplot, boxplot_frames, ylimits_box, widths, SIMPLIFY = FALSE) # create boxplots
+names(boxplots)<-title_of_sequences
+
+# then save
+mapply(f_save,boxplots,names(boxplots),
+       MoreArgs = list(output_folder=output_path,height=height_box,
+                       width=width_box),SIMPLIFY = FALSE)
+```
+
