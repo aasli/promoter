@@ -95,7 +95,7 @@ f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_ss
 f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
   ggsave(paste(plot_name,".jpeg",sep=""),plot,path=output_folder, height=height,
-         width=width)
+         width=width,units="cm")
   
 }
 

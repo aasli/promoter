@@ -401,19 +401,19 @@ f_boxplot<-function(frames,ylimits, width){
     coord_flip() +
     ylim(ylimits) +
     theme_bw() +
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(),
-          panel.border = element_blank(),
-          axis.line = element_line(colour="black"),
-          axis.text = element_text(size=28, face="bold"),
-          axis.title = element_text(size=28, face="bold"),
-          axis.line.x = element_line(size=1),
-          axis.line.y = element_blank(),
-          axis.text.y = element_blank(), 
-          aspect.ratio = 1,
-          axis.ticks.y = element_blank()
+    # theme(panel.background = element_blank(),
+    #       panel.grid = element_blank(),
+    #       panel.border = element_blank(),
+    #       axis.line = element_line(colour="black"),
+    #       axis.text = element_text(size=28, face="bold"),
+    #       axis.title = element_text(size=28, face="bold"),
+    #       axis.line.x = element_line(size=1),
+    #       axis.line.y = element_blank(),
+    #       axis.text.y = element_blank(), 
+    #       aspect.ratio = 1,
+    #       axis.ticks.y = element_blank()
           
-    )+
+    
     ylab("Fluorescence (a.u.)") +
     xlab("")
   return(plot)
