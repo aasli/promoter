@@ -25,7 +25,7 @@ f_smooth<-function(descriptive_list,label_list,stat,legend_title,ncol_legend,sca
                                aes_(x=descriptive_list[[i]][,8],
                                     y=descriptive_list[[i]][,stat],
                                     colour=label_list[i]),
-                               se=FALSE,size=1.5,span=0.1)
+                               se=FALSE,size=1.5)
     final_plot<-final_plot+smooth_layer
   }
   
@@ -60,6 +60,13 @@ f_size_plot<-function(dataframe,fsc_column,ssc_column, xlab_title, ylab_title,
   dataframe<-as.data.frame(dataframe)
   ggplot() +
     geom_point(aes(x=dataframe[,fsc_column],y=dataframe[,ssc_column]), size=0.5) +
+    
+    geom_segment(aes(x=25000,xend=100000, y=20000,yend=20000), colour="red")+
+    geom_segment(aes(x=25000,xend=100000, y=100000,yend=100000), colour="red")+
+    
+    geom_segment(aes(x=25000,xend=25000, y=20000,yend=100000), colour="blue")+
+    geom_segment(aes(x=100000,xend=100000, y=20000,yend=100000), colour="blue")+
+    
     theme_bw() +
     xlab(xlab_title) +
     ylab(ylab_title) +
@@ -322,7 +329,7 @@ f_density_plot<-function(dataframe,labels,doses,size_column, citrine_column,
   
   final_plot<-ggplot()  
   dataframe<-as.data.frame(dataframe)
-  for(i in doses){
+  for(i in 0){
     single_layer<- geom_density_2d(
       aes_(x=dataframe[which(dataframe[,dose_column]==i),size_column],
            y=dataframe[which(dataframe[,dose_column]==i),citrine_column],
@@ -441,8 +448,7 @@ function_curve_fitting<-
   # the function creates a list of fitted values, one for each "frame" input. 
   function(frame,list_of_starting_points){
     f_sigmoid <- function(params, x) {
-      ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
-                                                (params[4]))))
+      ( (params[1] / (1 + exp(params[2] * (x - params[3])))))
     }
     
     x = frame[,8]
@@ -451,27 +457,16 @@ function_curve_fitting<-
     a<-list_of_starting_points[[1]]
     b<-list_of_starting_points[[2]]
     c<-list_of_starting_points[[3]]
-    d<-list_of_starting_points[[4]]
-    e<-list_of_starting_points[[5]]
-    # fitting
-    fitmodel <- nlsLM(y ~  ( e+ (a-e)/((1 + ((x/c)^b))^(d))), start=list(a=a,b=b,c=c, d=d,e=e), 
-                      weights = (1/(frame[,5])), control = list(maxiter=1000))
     
-   
- 
+    # fitting
+    fitmodel <- nlsLM(y ~  (a/(1 + exp(b * (x-c)))), start=list(a=a,b=b,c=c), 
+                      weights = (1/frame[,5]))
+    
     # get the coefficients 
     params=coef(fitmodel)
     
-    # calculate ec50, ec90 and ec10
-    ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
-    ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
-    ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
-    
-    ec_list<-c(ec10,ec50,ec90)
-    print(ec_list)
-    
     sigmoid_fit <- f_sigmoid(params,x_values)
-    print(params)
+    
     return(sigmoid_fit)
   }
 
@@ -480,7 +475,7 @@ function_curve_fitting<-
 
 f_plot_sigmoid_curves<-
   # plot the fitted line and the individual data points. 
-  function(fit_list,frame_list, control_list,control_list_sigmoid){
+  function(fit_list,frame_list){
     
     final_plot<-ggplot() 
     # plot the lines
@@ -497,21 +492,13 @@ f_plot_sigmoid_curves<-
       final_plot<-final_plot+single_layer_point
     }
     
-    # plot controls
-    for (k in c(1:length(control_list))){
-      single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
-                                         y=control_list[[k]][,1][c(1,24)],
-                                           colour=control_list_sigmoid[[k]]))   
-      final_plot<-final_plot+single_layer_line
-    }
-    
     
     pretty_plot<-final_plot +
       scale_colour_manual(values = colour_palette) +
       scale_x_log10(breaks = breaks_sigmoid,
                     labels = labels_x_axis) +
+      scale_y_log10() +
       guides(colour=guide_legend(title = "Strains",nrow=2)) +
-      #scale_y_log10() +
       ggtitle(plot_title) +
       xlab(xlabel) +
       ylab("Fluorescence (a.u.)") +

@@ -7,7 +7,9 @@ t1p1<-f_read(t1p1_file,pattern_read)
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
 df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
-           f_df_list(t1p1,starting_well,2,c(0,200),columns_to_include))
+           f_df_list(t1p1,starting_well,2,c(0,200),columns_to_include),
+           f_df_list(t2p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
+           f_df_list(t3p1,starting_well,2,c(0,200),columns_to_include))
 
 
 #----------------------------------------------------------------------------------
@@ -52,7 +54,7 @@ smooth_dose_response<-f_smooth(descriptives_to_use, descriptives_labels,statisti
                                xlab_smooth, ylab_smooth,legend_direction_smooth,
                                legend_position_smooth,additional_arguments_smooth)
 
-f_save(smooth_dose_response,paste("smooth_dose_response_0.1_l.jpeg",time_point_smooth,sep = "_"),
+f_save(smooth_dose_response,paste("smooth_dose_response.jpeg",time_point_smooth,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_smooth, width=width_smooth)
 
@@ -86,22 +88,22 @@ mapply(f_save,grid_plots_size,names(grid_plots_size),
 
 ## histograms
 
-histograms<-mapply(f_geom_histogram,df_list[c(1,2)],control_sequence,
+histograms<-mapply(f_geom_histogram,df_list[c(1,2,6,7)],control_sequence,
                    MoreArgs = list(dose_column,
                                    citrine_column,labels_histogram,
                                    doses_histogram,size_histogram,breaks_histogram,
                                    legend_title_histogram,legend_ncol_histogram,
                                    legend_position_histogram,xlimits_histogram,
-                                   ylimits_histogram, df_list, label_list[c(3:5)]),
+                                   ylimits_histogram, df_list, label_list[c(3:5,8:10)]),
                    USE.NAMES = TRUE, SIMPLIFY = FALSE)
 
-names(histograms)<-strain_names[c(1,2)]
+names(histograms)<-strain_names[c(1,2,6,7)]
 ### making the grids
 
 
-name_list_histogram<-strain_names[c(1,2)] # should contain one name per strain that you want
+name_list_histogram<-strain_names[c(1,2,6,7)] # should contain one name per strain that you want
 #to create a grid for.
-label_list_histogram<-label_list[c(1,2)] # should contain one label per grid, 
+label_list_histogram<-label_list[c(1,2,6,7)] # should contain one label per grid, 
 #and the order of the labels must correspond to the order in which the strains appear in name_list.
 names(label_list_histogram)<-name_list_histogram
 
@@ -184,29 +186,31 @@ mapply(f_save,grid_plots_density,names(grid_plots_density),
 
 library("minpack.lm")
 # pick which strains/time_points you want to plot, and their labels
-frame_list<-descriptives[descriptives_to_use_sigmoid]
+frame_list<-descriptives[descriptives_to_use]
 label_list_sigmoid<-label_list[labels_to_use]
 
 
 #define x axis doses and the labels for plotting
 doses_experiment<-frame_list[[1]][,8]
-breaks_sigmoid<-c(0.1,doses_experiment[c(2:length(doses_experiment))])
 labels_x_axis<-c(0,frame_list[[1]][c(2:nrow(frame_list[[1]])),8])
 
 
 # replace 0 values in the doses with 0.1
 for(i in c(1:length(frame_list))){
-  frame_list[[i]][1,8]<-0.1
+  frame_list[[i]][1,8]<-0.3
 }
 
-# define the controls for putting on the plot
-control_list<-descriptives[controls_to_use_sigmoid]
-control_list_sigmoid<-label_list[controls_to_use_sigmoid]
+# for proline, remove dose 0 due to autofluorescence differences 
+for(i in c(3:length(frame_list))){
+  frame_list[[i]]<-frame_list[[i]][c(2:24),]
+}
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
-x_values<-lseq(min(frame_list[[1]][,8]),
+x_values_eth<-lseq(min(frame_list[[1]][,8]),
                max(frame_list[[1]][,8]),1000)
+x_values_pro<-lseq(min(frame_list[[3]][,8]),
+                   max(frame_list[[3]][,8]),1000)
 
 
 # apply the fitting to each frame with its own individual starting points.
@@ -214,10 +218,9 @@ sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_start
                                  SIMPLIFY = FALSE)
 
 # plot the fitted lines and the individual data points
-sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
-                                    control_list_sigmoid)
+sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list)
 
-f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr.jpeg",time_point_sigmoid,sep = "_"),
+f_save(sigmoid_plot,paste("sigmoid_fit_weighted.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 

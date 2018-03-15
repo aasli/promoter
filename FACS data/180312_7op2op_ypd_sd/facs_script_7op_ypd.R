@@ -52,7 +52,7 @@ smooth_dose_response<-f_smooth(descriptives_to_use, descriptives_labels,statisti
                                xlab_smooth, ylab_smooth,legend_direction_smooth,
                                legend_position_smooth,additional_arguments_smooth)
 
-f_save(smooth_dose_response,paste("smooth_dose_response_0.1_l.jpeg",time_point_smooth,sep = "_"),
+f_save(smooth_dose_response,paste("smooth_dose_response.jpeg",time_point_smooth,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_smooth, width=width_smooth)
 
@@ -79,15 +79,15 @@ names(grid_plots_size)<-name_list_size
 
 
 mapply(f_save,grid_plots_size,names(grid_plots_size),
-       MoreArgs = list(output_folder=output_path,output_path="size",
+       MoreArgs = list(output_folder=output_path,output_path="size_H",
                        height=height_size, width=width_size),SIMPLIFY = FALSE)
 
 #----------------------------------------------------------------------------------
 
 ## histograms
 
-histograms<-mapply(f_geom_histogram,df_list[c(1,2)],control_sequence,
-                   MoreArgs = list(dose_column,
+histograms<-mapply(f_geom_histogram,df_list[c(1,2)],
+                   MoreArgs = list(control_sequence,dose_column,
                                    citrine_column,labels_histogram,
                                    doses_histogram,size_histogram,breaks_histogram,
                                    legend_title_histogram,legend_ncol_histogram,
@@ -154,7 +154,7 @@ df_with_size<-lapply(df_list,f_size)
 
 
 
-density_plots<-lapply(df_with_size,f_density_plot, labels=labels_size_vs_induction, 
+density_plots<-lapply(df_with_size[c(1,2)],f_density_plot, labels=labels_size_vs_induction, 
                       doses=doses_size_vs_induction, palette=palette_density, 
                       x_breaks=x_breaks_density,legend_title=legend_title_density, 
                       ncol_legend=ncol_legend_density, legend_position=legend_position_density, 
@@ -174,7 +174,7 @@ grid_plots_density<- lapply(name_list_density,f_density_grid,plot_list=density_p
 
 names(grid_plots_density)<-name_list_density
 
-mapply(f_save,grid_plots_density,names(grid_plots_density),
+mapply(f_save,density_plots,names(density_plots),
        MoreArgs = list(output_folder=output_path,output_path="density",
                        height=height_density, width=width_density),SIMPLIFY = FALSE)
 
@@ -199,10 +199,6 @@ for(i in c(1:length(frame_list))){
   frame_list[[i]][1,8]<-0.1
 }
 
-# define the controls for putting on the plot
-control_list<-descriptives[controls_to_use_sigmoid]
-control_list_sigmoid<-label_list[controls_to_use_sigmoid]
-
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
 x_values<-lseq(min(frame_list[[1]][,8]),
@@ -214,10 +210,9 @@ sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_start
                                  SIMPLIFY = FALSE)
 
 # plot the fitted lines and the individual data points
-sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
-                                    control_list_sigmoid)
+sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list)
 
-f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr.jpeg",time_point_sigmoid,sep = "_"),
+f_save(sigmoid_plot,paste("sigmoid_fit_weighted_loglog.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
