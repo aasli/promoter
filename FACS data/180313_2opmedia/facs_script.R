@@ -210,14 +210,19 @@ x_values<-lseq(min(frame_list[[1]][,8]),
 
 
 # apply the fitting to each frame with its own individual starting points.
-sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
+
+parameters<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
                                  SIMPLIFY = FALSE)
+
+sigmoid_fit_descriptives<-lapply(parameters,f_sigmoid_fit,x_values)
+
+ec_list_descriptives<-lapply(parameters,f_ecs)
 
 # plot the fitted lines and the individual data points
 sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
-                                    control_list_sigmoid)
+                                    control_list_sigmoid, ec_list_descriptives)
 
-f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr.jpeg",time_point_sigmoid,sep = "_"),
+f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr_nc.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
