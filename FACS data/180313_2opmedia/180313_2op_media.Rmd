@@ -178,7 +178,7 @@ width_descriptives<-15
 ## sigmoid fits
 descriptives_to_use_sigmoid<-c(1,2)
 labels_to_use<-c(1,2)
-colour_palette<-c("red","blue", "orange","green","black") # define the colour palette for plotting
+colour_palette<-c("red","blue", "orange","green","black", "pink", "purple","firebrick") # define the colour palette for plotting
 # define the plot title, xlabel
 plot_title<-"Dose Response Curves, 24"
 xlabel<-expression(paste("aTc[ng/mL]"))
@@ -227,6 +227,8 @@ width_density<-15
 source("facs_script.R")
 
 histograms
+
+demo(colors)
 
 ```
 

@@ -440,10 +440,7 @@ function_curve_fitting<-
   # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
   # the function creates a list of fitted values, one for each "frame" input. 
   function(frame,list_of_starting_points){
-    f_sigmoid <- function(params, x) {
-      ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
-                                                (params[4]))))
-    }
+   
     
     x = frame[,8]
     y = frame[,1]
@@ -461,7 +458,12 @@ function_curve_fitting<-
  
     # get the coefficients 
     params=coef(fitmodel)
+    return(params)
     
+  }
+    
+ 
+f_ecs<-function(params){
     # calculate ec50, ec90 and ec10
     ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
     ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
@@ -469,7 +471,16 @@ function_curve_fitting<-
     
     ec_list<-c(ec10,ec50,ec90)
     print(ec_list)
-    
+    return(ec_list)
+    }
+
+
+f_sigmoid <- function(params, x) {
+  ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
+                                            (params[4]))))
+}
+
+f_sigmoid_fit<-function(params,x_values){    
     sigmoid_fit <- f_sigmoid(params,x_values)
     print(params)
     return(sigmoid_fit)
@@ -480,7 +491,7 @@ function_curve_fitting<-
 
 f_plot_sigmoid_curves<-
   # plot the fitted line and the individual data points. 
-  function(fit_list,frame_list, control_list,control_list_sigmoid){
+  function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list){
     
     final_plot<-ggplot() 
     # plot the lines
@@ -497,12 +508,42 @@ f_plot_sigmoid_curves<-
       final_plot<-final_plot+single_layer_point
     }
     
-    # plot controls
-    for (k in c(1:length(control_list))){
-      single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
-                                         y=control_list[[k]][,1][c(1,24)],
-                                           colour=control_list_sigmoid[[k]]))   
-      final_plot<-final_plot+single_layer_line
+    # # plot controls
+    # for (k in c(1:length(control_list))){
+    #   single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
+    #                                      y=control_list[[k]][,1][c(1,24)],
+    #                                        colour=control_list_sigmoid[[k]]))   
+    #   final_plot<-final_plot+single_layer_line
+    # }
+    
+    for(l in c(1:length(ec_list))){
+      ec10<-round(ec_list[[l]][1],2)
+      ec10_xvalue<-mean(which(round(x_values,2)==ec10))
+      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+      
+      ec50<-round(ec_list[[l]][2],2)
+      ec50_xvalue<-mean(which(round(x_values,2)==ec50))
+      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+      
+      ec90<-round(ec_list[[l]][3],1)
+      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
+      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+      print(ec90)
+      print(ec90_xvalue)
+      print(ec90_yvalue)
+      
+      ec10_layer<-geom_point(aes_(x=ec10,
+                                 y=ec10_yvalue,
+                                 colour="EC10")) 
+      ec50_layer<-geom_point(aes_(x=ec50,
+                                 y=ec50_yvalue,
+                                 colour="EC50")) 
+      ec90_layer<-geom_point(aes_(x=ec90,
+                                 y=ec90_yvalue,
+                                 colour="EC90")) 
+      
+      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+      
     }
     
     
