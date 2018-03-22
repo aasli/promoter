@@ -13,7 +13,7 @@ df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,column
            f_df_list(t3p1,starting_well,2,c(0,200),columns_to_include),
            f_df_list(t1p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
            f_df_list(t4p1,starting_well,2,c(0,200),columns_to_include),
-           f_df_list(t2p1,starting_well,23,experiment_doses[-14],columns_to_include),
+           f_df_list(t2p1,starting_well,24,experiment_doses,columns_to_include),
            f_df_list(t5p1,starting_well,2,c(0,200),columns_to_include)
            )
 #----------------------------------------------------------------------------------

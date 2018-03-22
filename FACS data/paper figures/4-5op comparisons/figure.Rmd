@@ -13,7 +13,7 @@ t0p1_file<-"180116_operator&TetR_comparisons/p1"
 pattern_read<-"Specimen_001"
 
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/4-5op comparisons"
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/4-5operator"
 # create folders named size, svf, histograms, boxplots under this directory. 
 
 columns<-c(3,6,7) # usually fsc-h, ssc-h, and 488C-h

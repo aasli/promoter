@@ -25,7 +25,7 @@ f_smooth<-function(descriptive_list,label_list,stat,legend_title,ncol_legend,sca
                                aes_(x=descriptive_list[[i]][,8],
                                     y=descriptive_list[[i]][,stat],
                                     colour=label_list[i]),
-                               se=FALSE,size=1.5)
+                               se=FALSE,size=1.5,span=0.1)
     final_plot<-final_plot+smooth_layer
   }
   
@@ -440,7 +440,7 @@ function_curve_fitting<-
   # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
   # the function creates a list of fitted values, one for each "frame" input. 
   function(frame,list_of_starting_points){
-    
+   
     
     x = frame[,8]
     y = frame[,1]
@@ -454,25 +454,25 @@ function_curve_fitting<-
     fitmodel <- nlsLM(y ~  ( e+ (a-e)/((1 + ((x/c)^b))^(d))), start=list(a=a,b=b,c=c, d=d,e=e), 
                       weights = (1/(frame[,5])), control = list(maxiter=1000))
     
-    
-    
+   
+ 
     # get the coefficients 
     params=coef(fitmodel)
     return(params)
     
   }
-
-
+    
+ 
 f_ecs<-function(params){
-  # calculate ec50, ec90 and ec10
-  ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
-  ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
-  ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
-  
-  ec_list<-c(ec10,ec50,ec90)
-  print(ec_list)
-  return(ec_list)
-}
+    # calculate ec50, ec90 and ec10
+    ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
+    ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
+    ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
+    
+    ec_list<-c(ec10,ec50,ec90)
+    print(ec_list)
+    return(ec_list)
+    }
 
 
 f_sigmoid <- function(params, x) {
@@ -481,10 +481,88 @@ f_sigmoid <- function(params, x) {
 }
 
 f_sigmoid_fit<-function(params,x_values){    
-  sigmoid_fit <- f_sigmoid(params,x_values)
-  print(params)
-  return(sigmoid_fit)
-}
+    sigmoid_fit <- f_sigmoid(params,x_values)
+    print(params)
+    return(sigmoid_fit)
+  }
+
+
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list){
+    
+    final_plot<-ggplot() 
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # # plot controls
+    # for (k in c(1:length(control_list))){
+    #   single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
+    #                                      y=control_list[[k]][,1][c(1,24)],
+    #                                        colour=control_list_sigmoid[[k]]))   
+    #   final_plot<-final_plot+single_layer_line
+    # }
+    
+    for(l in c(1:length(ec_list))){
+      ec10<-round(ec_list[[l]][1],2)
+      ec10_xvalue<-mean(which(round(x_values,2)==ec10))
+      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+      
+      ec50<-round(ec_list[[l]][2],2)
+      ec50_xvalue<-mean(which(round(x_values,2)==ec50))
+      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+      
+      ec90<-round(ec_list[[l]][3],1)
+      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
+      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+      print(ec90)
+      print(ec90_xvalue)
+      print(ec90_yvalue)
+      
+      ec10_layer<-geom_point(aes_(x=ec10,
+                                 y=ec10_yvalue,
+                                 colour="EC10")) 
+      ec50_layer<-geom_point(aes_(x=ec50,
+                                 y=ec50_yvalue,
+                                 colour="EC50")) 
+      ec90_layer<-geom_point(aes_(x=ec90,
+                                 y=ec90_yvalue,
+                                 colour="EC90")) 
+      
+      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+      
+    }
+    
+    
+    pretty_plot<-final_plot +
+      scale_colour_manual(values = colour_palette) +
+      scale_x_log10(breaks = breaks_sigmoid,
+                    labels = labels_x_axis) +
+      guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      #scale_y_log10() +
+      ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab("Fluorescence (a.u.)") +
+      theme_bw() +
+      theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "bottom") +
+      expand_limits(x=0.3)
+    
+    return(pretty_plot)
+  }
 
 
 #----------------------------------------------------------------------------------------

@@ -389,32 +389,32 @@ f_stat_summary<-function(dataframe){
 
 f_boxplot<-function(frames,ylimits, width){
   summary_stats<-f_stat_summary(frames)
+  formatter<-function(x){x/1000}
   
   plot<-ggplot(frames) +
-    geom_violin(aes(x=L1,y=value),scale="width", width=width,
-                size=2) +
+    geom_violin(aes(x=L1,y=value),scale="width", width=width, size=1) +
     
     geom_errorbar(data=summary_stats,aes(x=label, ymin=Q1, ymax=Q3),
-                 width=0.2, size=1.5) +
-    geom_point(data=summary_stats,aes(x=label,y=median), size=5) +
+                 width=0.2) +
+    geom_point(data=summary_stats,aes(x=label,y=median)) +
     
     coord_flip() +
-    ylim(ylimits) +
+    scale_y_continuous(limits = ylimits, labels = formatter) +
     theme_bw() +
     theme(panel.background = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(colour="black"),
-          axis.text = element_text(size=28, face="bold"),
-          axis.title = element_text(size=28, face="bold"),
-          axis.line.x = element_line(size=1),
+          axis.text = element_text(face = "bold"),
+          axis.title = element_text(),
+          axis.line.x = element_line(size = 0.7),
           axis.line.y = element_blank(),
           axis.text.y = element_blank(), 
           aspect.ratio = 1,
           axis.ticks.y = element_blank()
           
     )+
-    ylab("Fluorescence (a.u.)") +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
     xlab("")
   return(plot)
   

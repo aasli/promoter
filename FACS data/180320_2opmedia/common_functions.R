@@ -5,8 +5,10 @@
 library(flowCore)
 
 f_read<-function(working_directory, pattern){
+ 
 working_directory<-paste("C:/Users/aslia/Desktop/pisi/ETH/master project/FACS data/",
                          working_directory,sep="")
+print(working_directory)
 setwd(working_directory)
 flowset<-read.flowSet(pattern=pattern)
 return(flowset)
@@ -16,7 +18,7 @@ return(flowset)
 
 ## create one dataframe per plate, while adding doses.
 
-f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns){
+f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns,length_samples){
   
   df_list<-list()
   
@@ -25,12 +27,11 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns){
     strain<-data.frame()
     
     for(k in c(i:(i+wells_per_sample-1))){
-      
     sample<-as.data.frame(flowset[[k]]@exprs[,columns])
     dose<-doses[[which(k==c(i:(i+wells_per_sample-1)))]]
     dose_column<-as.data.frame(rep(dose,nrow(sample)))
     sample<-cbind(sample,dose_column)
-    colnames(sample)[4]<-"Dose"
+    colnames(sample)[6]<-"Dose"
     
     strain<-rbind(strain,sample)
     }
@@ -38,8 +39,28 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns){
     index<-which(i==seq(starting_well,length(flowset),wells_per_sample))
     df_list[[index]]<-strain
     
+    
+    
   }
   
+  
+  # for(m in c(85:90)){
+  #   
+  #   if((m %% 2) == 0) {
+  #     dose<-0
+  #   } else {
+  #     dose<-400
+  #   }
+  #   print(m)
+  #   
+  #   sample<-as.data.frame(flowset[[m]]@exprs[,columns])
+  #   dose_column<-as.data.frame(rep(dose,nrow(sample)))
+  #   sample<-cbind(sample,dose_column)
+  #   colnames(sample)[4]<-"Dose"
+  #   
+  #   df_list[[m]]<-sample
+  # }
+  # 
   return(df_list)
 }
 
@@ -69,7 +90,7 @@ f_df_comparison<-function(flowset,columns, fsch_column, ssch_column, fsc_h_lower
 
 # to generate the df_list names
 f_names_df_list<- function(strain_name, time_point){
-  name<-paste(strain_name, time_point, sep = "")
+  name<-paste(strain_name, time_point, sep = " ")
   return(name)
 }
 
@@ -78,14 +99,16 @@ f_names_df_list<- function(strain_name, time_point){
 ## subsetting based on size (FSC-W, SSC-W)
 
 
-f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_sscw){
+f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_sscw, 
+                        lower_limit_fscw,lower_limit_sscw){
   data_frame<-as.data.frame(data_frame)
-  subset(data_frame[,columns], 
-         data_frame[,col_fscw]> limit_fscw & 
+  subset<-subset(data_frame[,columns], 
+         data_frame[,col_fscw] < limit_fscw &
            data_frame[,col_sscw] < limit_sscw &
          data_frame[,col_fscw]> lower_limit_fscw & 
          data_frame[,col_sscw] > lower_limit_sscw )
-  
+  return(subset)
+  print(subset)
 }
 
 #-----------------------------------------------------------------------------------
@@ -94,7 +117,8 @@ f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_ss
 
 f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
-  ggsave(paste(plot_name,".jpeg",sep=""),plot,path=output_folder, height=height,
+  ggsave(paste(plot_name,".jpeg",sep=""),plot,path=
+           paste(output_folder,"/",output_path,sep = ""), height=height,
          width=width, units = "cm")
   
 }
@@ -112,15 +136,7 @@ f_save_table<-function(dataframe,file_name){
 library(reshape2)
 f_melt<-function(sequence,df_list,label_list, subset_criterion){
   chosen_frames<-df_list[sequence]
-  
-  final_label_list<-c()
-  for(i in c(1:length(label_list[sequence]))){
-    letter<-letters[i]
-    label<-paste(letter,label_list[sequence][[i]],sep = "_")
-    final_label_list<-c(final_label_list,label)
-  }
-  
-  names(chosen_frames)<-final_label_list
+  names(chosen_frames)<-label_list[sequence]
   melt_frames<-melt(chosen_frames)
   melt_frames_subset<-subset(melt_frames,melt_frames[,1]==subset_criterion) # to get only citrine data
   
@@ -128,3 +144,17 @@ f_melt<-function(sequence,df_list,label_list, subset_criterion){
 }
 
 #-----------------------------------------------------------------------------------
+
+f_normalize<-function(dataframe,column){
+  max<-max(dataframe[,column])
+  min<-min(dataframe[,column])
+  for(i in c(1:nrow(dataframe))){
+    dataframe[i,column]<-(dataframe[i,column]-min)/(max-min)
+  }
+  return(dataframe)
+}
+
+f_dataframe_create<-function(dataframe_list,frame,dose, dose_column){
+  dataframe<-subset(dataframe_list[[frame]],dataframe_list[[frame]][,dose_column]==dose)
+  return(dataframe)
+}

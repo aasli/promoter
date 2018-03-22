@@ -116,7 +116,7 @@ f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
   ggsave(paste(plot_name,".jpeg",sep=""),plot,path=
            paste(output_folder,"/",output_path,sep = ""), height=height,
-         width=width)
+         width=width, units = "cm")
   
 }
 

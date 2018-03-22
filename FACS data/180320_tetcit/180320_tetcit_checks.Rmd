@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("common_functions.R")
+source("plotting_functions.R")
+source("stat_functions.R")
+
+working_directory<-"180320_media2op_tetcit/p2"
+pattern<-"Specimen"
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/march18/180320_tetcit_checks"
+
+p2<-f_read(working_directory, pattern)
+
+df_list<-f_df_list(p2[c(12:length(p2))],1,1,c(0,300),c(3,6,7),16)
+```
+
+
+```{r}
+
+framei<-df_list[c(1:8)]
+frameu<-df_list[c(9:16)]
+
+f_plot<-function(framei,frameu,number){
+plot<-ggplot() +
+  geom_density(aes(x=framei[,3], colour="induced")) +
+  geom_density(aes(x=frameu[,3], colour="uninduced")) +
+  
+  theme_bw() +
+  ggtitle(paste("strain",number,sep = "_")) +
+
+  xlim(0,4000)
+
+ggsave(plot,path=output_path,filename = paste(number,".jpeg") ) 
+  
+return(plot)
+
+}
+
+mapply(f_plot,framei,frameu,c(1:8),SIMPLIFY = FALSE)
+
+```
+

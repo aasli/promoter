@@ -440,7 +440,7 @@ function_curve_fitting<-
   # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
   # the function creates a list of fitted values, one for each "frame" input. 
   function(frame,list_of_starting_points){
-   
+    
     
     x = frame[,8]
     y = frame[,1]
@@ -454,25 +454,25 @@ function_curve_fitting<-
     fitmodel <- nlsLM(y ~  ( e+ (a-e)/((1 + ((x/c)^b))^(d))), start=list(a=a,b=b,c=c, d=d,e=e), 
                       weights = (1/(frame[,5])), control = list(maxiter=1000))
     
-   
- 
+    
+    
     # get the coefficients 
     params=coef(fitmodel)
     return(params)
     
   }
-    
- 
+
+
 f_ecs<-function(params){
-    # calculate ec50, ec90 and ec10
-    ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
-    ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
-    ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
-    
-    ec_list<-c(ec10,ec50,ec90)
-    print(ec_list)
-    return(ec_list)
-    }
+  # calculate ec50, ec90 and ec10
+  ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
+  ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
+  ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
+  
+  ec_list<-c(ec10,ec50,ec90)
+  print(ec_list)
+  return(ec_list)
+}
 
 
 f_sigmoid <- function(params, x) {
@@ -481,10 +481,10 @@ f_sigmoid <- function(params, x) {
 }
 
 f_sigmoid_fit<-function(params,x_values){    
-    sigmoid_fit <- f_sigmoid(params,x_values)
-    print(params)
-    return(sigmoid_fit)
-  }
+  sigmoid_fit <- f_sigmoid(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
 
 
 ## plotting the sigmoid curves.

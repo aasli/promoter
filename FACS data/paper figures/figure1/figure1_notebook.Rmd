@@ -1,4 +1,4 @@
----
+---------
 title: "R Notebook"
 output: html_notebook
 ---
@@ -59,7 +59,7 @@ columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #
 
 strain_names<-c("2561eth","2562eth","70eth","2551eth","2683eth",
                 "2561gly","2562gly","70gly","2551gly","2683gly",
-                "2561pro","2562pro","70pro","2551pro","2683pro") 
+                "2561pro","2562pro","2551pro","2683pro","70pro") 
 time_points<-c("24h")
 
 label_list<- c("2op NF_eth",
@@ -74,9 +74,9 @@ label_list<- c("2op NF_eth",
                "tdh3_gly",
                "2op NF_pro",
                "2op pAct1_pro",
-               "fry70_pro",
                "no repressor_pro",
-               "tdh3_pro"
+               "tdh3_pro",
+               "fry70_pro"
                )
 
 names(label_list)<-strain_names
@@ -130,7 +130,7 @@ width_sigmoid<-15
 
 ```{r}
 ## this is for checking the weird behaviour due to aTc that proline showed once. 
-seq<-c(14,15)
+seq<-c(13,14)
 final_plot<-ggplot()
   for(i in seq){
   
@@ -319,8 +319,48 @@ f_plot_sigmoid_curves_single<-
      # final_plot<-final_plot +ribbon_layer_control
 
     }
+    
+    for(l in c(1:length(ec_list))){
+      ec10<-round(ec_list[[l]][1],1)
+      ec10_xvalue<-mean(which(round(x_values,1)==ec10))
+      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+      
+      ec50<-round(ec_list[[l]][2],1)
+      ec50_xvalue<-mean(which(round(x_values,1)==ec50))
+      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+      
+      ec90<-round(ec_list[[l]][3],1)
+      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
+      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+      print(ec90/ec10)
+      print(ec10)
+      print(ec50)
+      print(ec90)
+      
+      strain<-strain_list[[l]]
+      
+      ec10_layer<-geom_point(aes_(x=ec10,
+                                 y=ec10_yvalue,
+                                 shape=paste("EC10",strain)),size=3) 
+      ec50_layer<-geom_point(aes_(x=ec50,
+                                 y=ec50_yvalue,
+                                 shape=paste("EC50",strain)),size=3) 
+      ec90_layer<-geom_point(aes_(x=ec90,
+                                 y=ec90_yvalue,
+                                 shape=paste("EC90",strain)),size=3) 
+      
+      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+      
+    }
+    
     pretty_plot<-final_plot +
       scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
+       scale_shape_manual(values = c("EC10 NF"=0,
+                                    "EC50 NF"=1,
+                                    "EC90 NF"=2,
+                                    "EC10 pAct1"=15,
+                                    "EC50 pAct1"=16,
+                                    "EC90 pAct1"=17)) +
       scale_colour_manual(values = colour_palette) +
       scale_x_continuous(breaks = doses_experiment,
                     labels = labels_x_axis, 
@@ -352,8 +392,8 @@ ylim<-c(0,NA)
 
 colour_palette<-c("darkred","lightblue")
 list_of_starting_points<-list(
-  c(7000,0.1,2,5000),
-  c(7000,0.1,2,3000)
+  c(7000,0.1,2,1,5000),
+  c(7000,0.1,2,1,3000)
   # c(7000,0.1,2,5000),
   # c(7000,0.1,2,3000),
   # c(10000,0.3,6,3000),
@@ -389,14 +429,18 @@ x_values<-lseq(min(frame_list[[1]][,8]),
                max(frame_list[[1]][,8]),1000)
 
 
+strain_list<-c("NF","pAct1")
+
 # apply the fitting to each frame with its own individual starting points.
-sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
+sigmoid_fit_parameters<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
                                  SIMPLIFY = FALSE)
 
+ec_list<-lapply(sigmoid_fit_parameters,f_ecs)
 
-sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list, control_frame_list,
-                                    dose_control, label_list_control, xlim, ylim)
+fit<-lapply(sigmoid_fit_parameters,f_sigmoid_fit,x_values)
 
+sigmoid_plot<-f_plot_sigmoid_curves_single(fit,frame_list, control_frame_list,
+                                    dose_control, label_list_control, xlim, ylim,ec_list,strain_list)
 sigmoid_plot
 
 ggsave(sigmoid_plot,filename =  "glycerol.jpeg", path=output_path, height=10, width=15)
@@ -407,24 +451,26 @@ ggsave(sigmoid_plot,filename =  "glycerol.jpeg", path=output_path, height=10, wi
 
 # creating the individual plots
 library("minpack.lm")
+library("ggthemes")
 ## plotting the sigmoid curves.
 
 f_plot_sigmoid_curves_single<-
   # plot the fitted line and the individual data points. 
-  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim){
+  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim,
+           ec_list,strain_list){
     formatter<-function(x){x/1000}
     final_plot<-ggplot() 
     # plot the lines
     for (i in c(1:length(fit_list))){
       single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
-                                         colour=label_list_sigmoid[[i]]),size=2)
+                                         colour=label_list_sigmoid[[i]]))
       final_plot<-final_plot+single_layer_line
     }
     
     # plot the individual data points
     for (j in c(1:length(frame_list))){
       single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
-                                           colour=label_list_sigmoid[[j]]), size=2.5)   
+                                           colour=label_list_sigmoid[[j]]))   
       final_plot<-final_plot+single_layer_point
     }
     
@@ -434,8 +480,7 @@ f_plot_sigmoid_curves_single<-
       frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
 
       single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
-                                             linetype=label_list_control[[k]]), colour="black", 
-                                        size=2)
+                                             linetype=label_list_control[[k]]), colour="black")
       ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
                                               ymax=frame[,1]-(frame[,6]*frame[,1]),
                                               x=x_values))
@@ -444,25 +489,71 @@ f_plot_sigmoid_curves_single<-
      # final_plot<-final_plot +ribbon_layer_control
 
     }
+    
+    
+     for(l in c(1:length(ec_list))){
+      ec10<-round(ec_list[[l]][1],1)
+      ec10_xvalue<-mean(which(round(x_values,1)==ec10))
+      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+      
+      ec50<-round(ec_list[[l]][2],1)
+      ec50_xvalue<-mean(which(round(x_values,1)==ec50))
+      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+      
+      ec90<-round(ec_list[[l]][3],1)
+      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
+      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+      print(ec90/ec10)
+      print(ec10)
+      print(ec50)
+      print(ec90)
+      
+      strain<-strain_list[[l]]
+      
+      ec10_layer<-geom_point(aes_(x=ec10,
+                                 y=ec10_yvalue,
+                                 shape=paste("EC10",strain)),size=3) 
+      ec50_layer<-geom_point(aes_(x=ec50,
+                                 y=ec50_yvalue,
+                                 shape=paste("EC50",strain)),size=3) 
+      ec90_layer<-geom_point(aes_(x=ec90,
+                                 y=ec90_yvalue,
+                                 shape=paste("EC90",strain)),size=3) 
+      
+      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+      
+    }
+    
     pretty_plot<-final_plot +
       scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
+      scale_shape_manual(values = c("EC10 NF"=0,
+                                    "EC50 NF"=1,
+                                    "EC90 NF"=2,
+                                    "EC10 pAct1"=15,
+                                    "EC50 pAct1"=16,
+                                    "EC90 pAct1"=17)) +
       scale_colour_manual(values = colour_palette) +
       scale_x_continuous(breaks = doses_experiment,
                     labels = labels_x_axis, 
-                    limits = xlim, 
+                    limits = xlim,
                     trans = "log10") +
       scale_y_continuous(limits = ylim, labels=formatter) +
       guides(colour=guide_legend(title = "Strains",nrow=2)) +
       # ggtitle(plot_title) +
       xlab(xlabel) +
       ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
-      theme_bw() +
       theme(panel.grid.minor = element_blank(),
             legend.direction = "horizontal", legend.position = "none", 
             panel.border = element_blank(), 
-            axis.line = element_line(size=1), 
-            axis.text = element_text(size=24),
-            axis.title = element_text(size=24)) 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+    
+      # geom_rangeframe(aes(x=c(min(x_values):max(x_values)), 
+      #                     y=seq(0,50,length.out=length(c(min(x_values):max(x_values))))),sides = "lb") 
     
     return(pretty_plot)
   }
@@ -472,13 +563,13 @@ descriptives_to_use<-c(11,12)
 control_descriptives_to_use<-c(13,14,15)
 labels_to_use<-c(11,12)
 dose_control<-"200"
-xlim<-c(0.5,32)
+xlim<-c(0.1,200)
 ylim<-c(0,NA)
 
-colour_palette<-c("darkred","lightblue")
+colour_palette<-c("darkred","lightblue","grey20","grey50","grey80")
 list_of_starting_points<-list(
-  c(10000,0.5,2),
-  c(10000,0.3,3)
+  c(40000,0.5,2,1,5000),
+  c(40000,0.3,3,1,5000)
   # c(7000,0.1,2,5000),
   # c(7000,0.1,2,3000),
   # c(10000,0.3,6,3000),
@@ -498,31 +589,49 @@ for(i in c(2,3)){
 
 
 #define x axis doses and the labels for plotting
-doses_experiment<-c(0.5,1,3,5,10,20,30,60,200)
-labels_x_axis<-c("0.5","1","3","5","10","20","30", "60","200")
+doses_experiment<-c(0.1,0.5,1,2,3,5,10,20,30,60,200)
+labels_x_axis<- c("0","0.5","1","2","3","5","10","20","30","60","200")
 
 
 # replace 0 values in the doses with 0.1
 for(i in c(1:length(frame_list))){
-  frame_list[[i]]<-frame_list[[i]][-1,]
+  frame_list[[i]][1,8]<-0.1
 }
-
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
 x_values<-lseq(min(frame_list[[1]][,8]),
                max(frame_list[[1]][,8]),1000)
 
+strain_list<-c("NF","pAct1")
 
 # apply the fitting to each frame with its own individual starting points.
-sigmoid_fit_descriptives<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
+sigmoid_fit_parameters<-mapply(function_curve_fitting,frame_list,list_of_starting_points, 
                                  SIMPLIFY = FALSE)
 
+ec_list<-lapply(sigmoid_fit_parameters,f_ecs)
 
-sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list, control_frame_list,
-                                    dose_control, label_list_control, xlim, ylim)
+fit<-lapply(sigmoid_fit_parameters,f_sigmoid_fit,x_values)
+
+sigmoid_plot<-f_plot_sigmoid_curves_single(fit,frame_list, control_frame_list,
+                                    dose_control, label_list_control, xlim, ylim,ec_list,strain_list)
 
 sigmoid_plot
 
-ggsave(sigmoid_plot,filename =  "proline.jpeg", path=output_path, height=10, width=15)
+ggsave(sigmoid_plot,filename =  "proline.jpeg", path=output_path, height=10, width=15, units = "cm")
 ```
+
+
+```{r}
+
+ggplot( )+ 
+  
+  geom_point(aes(x=c(0:10),y=c(0:10))) +
+  geom_rangeframe(aes(x = c(1:10),y=seq_len(10)),sides = "lb") +
+  scale_x_continuous(breaks=extended_range_breaks()(c(0:10)))  +
+  theme(panel.background = element_blank()) +
+  xlab("deneme") +
+  theme(axis.title = element_text(vjust = 0, hjust = 1)
+
+```
+
