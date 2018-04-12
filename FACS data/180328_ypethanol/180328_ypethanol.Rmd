@@ -1,0 +1,235 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r set parameters}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+ c(0,0.2,0.5,0.7,1,1.5,2,2.5,3,4,5,6,7,8,10,12,15,20,25,30,40,45,60,200)
+
+## colour scale
+
+plot_palette<-c(
+"0"="#867236",
+"0.2"="#6343c6",
+"0.5"="#addf42",
+"0.7"="#bf4dd6",
+"1"="#63d654",
+"1.5"="#d148a3",
+"2"="#d7ca3b",
+"2.5"="#6e74cc",
+"3"="#5c8f38",
+"4"="#77397a",
+"5"="#74dc9e",
+"6"="#cf466b",
+"7"="#76d5d7",
+"8"="#de4e34",
+"10"="#8cadd1",
+"12"="#d6913d",
+"15"="#4b5e7d",
+"20"="#cad17b",
+"25"="#d292c6",
+"30"="#435738",
+"40"="#98432a",
+"45"="#5b957b",
+"60"="#7c4a51",
+"200"="#ccccb0",
+"fry70"="black",
+"no repressor"="black",
+"tdh3"="blue")
+
+
+
+# reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
+t0p1_file<-"180328_2opmedia/ypethanol"
+t1p1_file<-"180328_2opmedia/ypethanol/controls"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/march18/180328_ypethanol2op" # for saving plots
+xlabel<-expression(paste("aTc[ng/mL]", sep = "")) 
+
+starting_well<-1
+wells_per_sample<-24
+
+experiment_doses<- c(0,0.2,0.5,0.7,1,1.5,2,2.5,3,4,5,6,7,8,10,12,15,20,25,30,40,45,60,200)
+
+columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+strain_names<-c("2561","2562","2551","2683","70") 
+time_points<-c("24h")
+
+label_list<- c("2op, NF",
+               "2op, pAct1", 
+               "no repressor",
+               "pTDH3_citrine",
+               "fry70"
+               )
+
+names(label_list)<-strain_names
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-72000 #the value for subsetting based on FSC-W/H
+limit_sscw <-100000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-68000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-40000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+
+#---------------------------------------------------------------------------------------------------------------
+## smoothed dose response curves of the strains you want
+
+descriptive_sequence<-c(1:2) #pick the strains at given timepoints
+label_list_smooth<-label_list[c(1:2)]
+timepoint_used<-1
+number_of_timepoints<-1
+ncol_legend_smooth<-2
+statistic_to_use<-1 #1 is median, 2 is mean
+scale_x_breaks_smooth<-experiment_doses
+scale_x_labels_smooth<-experiment_doses
+legend_title_smooth<-"Strain"
+plot_title_smooth<-"Dose Response Curves, 6h"
+xlab_smooth<-xlabel
+ylab_smooth<-"Fluorescence (a.u.)"
+legend_direction_smooth<-"vertical"
+legend_position_smooth<-c(0.8,0.2)
+additional_arguments_smooth<-NULL
+time_point_smooth<-"6h" # to be used in the filename when saving the plot.
+
+height_smooth<-10 # the height and width of the plot to be saved
+width_smooth<-15
+#---------------------------------------------------------------------------------------------------------------
+
+## size plots
+fscw_column_size<-1
+sscw_column_size<-2
+xlab_size<-"FSC-W"
+ylab_size<-"SSC-W"
+ylimits_size<-c(40000,NA)
+xlimits_size<-c(40000,NA)
+
+labels_for_grid_size<-time_points # labels for the plots in the 2x2 grid
+
+height_size<-10 # saving dimensions
+width_size<-15
+
+#---------------------------------------------------------------------------------------------------------------
+
+## histograms
+
+doses_histogram<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
+
+labels_histogram<-c("0","0.2","0.5","0.7","1","1.5","2","2.5","3","4","5","6","7","8","10",
+                    "12","15","20","25","30","40","45","60","200","fry70","tdh3",
+                    "no repressor") 
+breaks_histogram<-labels_histogram
+
+dose_column<-4 #the column with doses 
+citrine_column<-3 # column with citrine measurement
+
+control_sequence<-c(3,4,5)
+control_labels<-c("fry70","no repressor","tdh3")
+
+size_histogram<- 1.3 # size of the lines
+legend_title_histogram<-xlabel
+legend_ncol_histogram<-2
+legend_position_histogram<-c(0.7,0.8)
+xlimits_histogram<-c(0,60000)
+ylimits_histogram<-c(0,0.0005)
+
+grid_labels_histograms<-time_points # labels for the plots in the 2x2 grid
+
+height_histograms<-10 # saving dimensions
+width_histograms<-15
+#---------------------------------------------------------------------------------------------------------------
+
+## descriptive plots
+palette<-c("24h"="purple")
+colour_labels<-time_points
+scale_x_breaks<-experiment_doses
+ylab_title<-"Fluorescence (a.u.)"
+xlab_title<-xlabel
+legend_title<-"Time Point"
+stat_columns_1<-c(1,6)
+stat_columns_2<-c(2,7)
+size_value_descriptives<-4
+height_descriptives<-10
+width_descriptives<-15
+
+#----------------------------------------------------------------------------------------------------------
+
+## sigmoid fits
+descriptives_to_use_sigmoid<-c(1,2)
+labels_to_use<-c(1,2)
+colour_palette<-c("red","blue", "orange","green","black") # define the colour palette for plotting
+# define the plot title, xlabel
+plot_title<-"Dose Response Curves, 24"
+xlabel<-expression(paste("aTc[ng/mL]"))
+
+# pick controls for the plot
+controls_to_use_sigmoid<-c(3,4,5)
+# define starting points for the fitting for each curve: c(a,b,c,d)
+# a is the upper asymptote, b is the steepest slope, c is the x axis value at b, e is the lower 
+# asymptote. you can define these individually for every curve. 
+# d is the symmetry parameter. if =1, the curve is symmetrical around EC50. 
+# a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. or does it? 
+list_of_starting_points<-list(
+  c(40000,0.5,5,0.4,5000),
+  c(40000,0.01,1,7,5000)
+)
+
+time_point_sigmoid<-"24h"
+height_sigmoid<-10
+width_sigmoid<-15
+#----------------------------------------------------------------------------------------------------------
+## size vs. induction plots
+
+palette_density<-plot_palette
+x_breaks_density<-labels_histogram
+legend_title_density<-xlabel
+ncol_legend_density<-2
+legend_position_density<-c(0.15,0.68)
+size_column<-5
+citrine_column<-3
+dose_column<-4
+
+doses_size_vs_induction<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
+
+labels_size_vs_induction<-labels_histogram  #labels that will appear on the legend, and that determine the colour_scale_manual mappings. If you change anything here, change it in the colour scale inside the function as well. 
+
+grid_labels_density<-time_points
+
+height_density<-10
+width_density<-15
+#---------------------------------------------------------------------------------------------------------------
+
+```
+
+
+```{r}
+source("facs_script.R")
+
+histograms
+
+```
+
+
+
+

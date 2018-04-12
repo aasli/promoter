@@ -629,6 +629,7 @@ f_plot_sigmoid_d<-function(x_values_d, y_values, label_list){
     theme_bw() +
     theme(legend.position = c(0.8,0.8)) +
     guides(colour=guide_legend(title = "Strain")) +
+    scale_x_log10() +
     ylab("D of Sigmoid Fit") +
     xlab("Dose") +
     scale_color_manual(values = c("red","blue"))
@@ -694,6 +695,27 @@ f_individual_histograms<-function(dataframe, xlimits, x_breaks,y_breaks, ylimits
 
 
 #----------------------------------------------------------------------------------------
+# plotting spearman correlation between size and fluorescence. 
+
+f_spearman_plot<-function(variance_list,label_list){
+  
+  final_plot<- ggplot() 
+  
+  for(i in c(1:length(variance_list))){ #variance list calculated in the facs script. 
+    single_layer<-
+      geom_point(aes(x=experiment_doses, y=variances[[i]], colour=label_list[[i]])) 
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    scale_x_log10() +
+    ylab("Spearman Correlation") +
+    xlab("[aTc] (ng/mL)")
+  
+}
+
+
 
 # library(dplyr)
 # 

@@ -86,22 +86,22 @@ mapply(f_save,grid_plots_size,names(grid_plots_size),
 
 ## histograms
 
-histograms<-mapply(f_geom_histogram,df_list[dfs_to_histogram],control_sequence,
-                   MoreArgs = list(dose_column,
+histograms<-mapply(f_geom_histogram,df_list[c(1,2,3)],
+                   MoreArgs = list(control_sequence,dose_column,
                                    citrine_column,labels_histogram,
                                    doses_histogram,size_histogram,breaks_histogram,
                                    legend_title_histogram,legend_ncol_histogram,
                                    legend_position_histogram,xlimits_histogram,
-                                   ylimits_histogram, df_list, label_list[c(3:5)]),
+                                   ylimits_histogram, df_list, label_list[c(3:6)]),
                    USE.NAMES = TRUE, SIMPLIFY = FALSE)
 
-names(histograms)<-strain_names[dfs_to_histogram]
+names(histograms)<-strain_names[c(1,2,3)]
 ### making the grids
 
 
-name_list_histogram<-strain_names[dfs_to_histogram] # should contain one name per strain that you want
+name_list_histogram<-strain_names[c(1,2,3)] # should contain one name per strain that you want
 #to create a grid for.
-label_list_histogram<-label_list[dfs_to_histogram] # should contain one label per grid, 
+label_list_histogram<-label_list[c(1,2,3)] # should contain one label per grid, 
 #and the order of the labels must correspond to the order in which the strains appear in name_list.
 names(label_list_histogram)<-name_list_histogram
 
@@ -116,19 +116,11 @@ names(grid_plots_histogram)<-name_list_histogram
 ## saving
 
 mapply(f_save,grid_plots_histogram,names(grid_plots_histogram),
-       MoreArgs = list(output_folder=output_path,output_path="histograms",
+       MoreArgs = list(output_folder=output_path,output_path="histograms_selected",
                        height=height_histograms, width=width_histograms),SIMPLIFY = FALSE)
 
 
 
-## each dose plotted on its own plot area. 
-
-histogram_grid<-lapply(df_list[dfs_to_histogram], f_individual_histograms,x_limits_individual_histogram,
-                       x_breaks_individual_histogram, y_breaks_individual_histogram, 
-                       y_limits_individual_histogram)
-
-mapply(f_save,histogram_grid, names_individual_histograms,
-       MoreArgs = list(output_path, "", 10, 15))
 
 #----------------------------------------------------------------------------------
 
@@ -137,21 +129,20 @@ mapply(f_save,histogram_grid, names_individual_histograms,
 all_plots<-f_descriptive_plotting()
 
 
-
-grid_plots_descriptives_1<- lapply(strain_names[c(1,2)],f_descriptive_grid,plot_list=all_plots[[1]],
+grid_plots_descriptives_1<- lapply(strain_names,f_descriptive_grid,plot_list=all_plots[[1]],
                                    legend_label=label_list,grid_labels=c("median","cd"))
-names(grid_plots_descriptives_1)<-strain_names[c(1,2)]
+names(grid_plots_descriptives_1)<-strain_names
 
 grid_plots_descriptives_2<- lapply(strain_names,f_descriptive_grid,plot_list=all_plots[[2]],
                                    legend_label=label_list,grid_labels=c("mean","cv"))
 names(grid_plots_descriptives_2)<-strain_names
 
 mapply(f_save,grid_plots_descriptives_1,names(grid_plots_descriptives_1),
-       MoreArgs = list(output_folder=output_path, output_path="descriptives1",
+       MoreArgs = list(output_folder=output_path, output_path="descriptives_1", 
                        height=height_descriptives, width=width_descriptives),SIMPLIFY = FALSE)
 
-mapply(f_save,grid_plots_descriptives_1,names(grid_plots_descriptives_1),
-       MoreArgs = list(output_folder=output_path, output_path="descriptives", 
+mapply(f_save,grid_plots_descriptives_2,names(grid_plots_descriptives_2),
+       MoreArgs = list(output_folder=output_path, output_path="descriptives_2", 
                        height=height_descriptives, width=width_descriptives),SIMPLIFY = FALSE)
 
 #----------------------------------------------------------------------------------
@@ -195,12 +186,12 @@ library("minpack.lm")
 # pick which strains/time_points you want to plot, and their labels
 frame_list<-descriptives[descriptives_to_use_sigmoid]
 label_list_sigmoid<-label_list[labels_to_use]
-
+strain_list<-C("pAct1","pVph1","pRNR2")
 
 #define x axis doses and the labels for plotting
-doses_experiment<-frame_list[[1]][,8]
+doses_experiment<-c(0,0.2,0.5,1,1.5,3,4,5,6,7,10,12,18,25,35,60,100)
 breaks_sigmoid<-c(0.1,doses_experiment[c(2:length(doses_experiment))])
-labels_x_axis<-c(0,frame_list[[1]][c(2:nrow(frame_list[[1]])),8])
+labels_x_axis<-c(0,doses_experiment[-1])
 
 
 # replace 0 values in the doses with 0.1
@@ -214,10 +205,9 @@ control_list_sigmoid<-label_list[controls_to_use_sigmoid]
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
-x_values<-c(0,lseq(min(frame_list[[1]][,8]),
-               max(frame_list[[1]][,8]),1000))
+x_values<-lseq(min(frame_list[[1]][,8]),
+               max(frame_list[[1]][,8]),1000)
 
-x_values_plotting<-c(min(frame_list[[1]][,8]),x_values[c(2:length(x_values))])
 
 # apply the fitting to each frame with its own individual starting points.
 
@@ -230,26 +220,9 @@ ec_list_descriptives<-lapply(parameters,f_ecs)
 
 # plot the fitted lines and the individual data points
 sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
-                                    control_list_sigmoid, ec_list_descriptives)
+                                    control_list_sigmoid, ec_list_descriptives, strain_list)
 
 f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr_nc.jpeg",time_point_sigmoid,sep = "_"),
-       output_folder=output_path,output_path="", 
-       height=height_sigmoid, width=width_sigmoid)
-
-#----------------------------------------------------------------------------------
-# plot derivative of the sigmoid_fit
-
-x_values_d<-seq(0,
-               max(frame_list[[1]][,8]),length.out=10000)
-
-sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
-
-f_derivative_plot<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_derivative)
-
-
-
-
-f_save(f_derivative_plot,paste("derivative_sigmoid.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
@@ -276,141 +249,3 @@ names(qqplots)<-titles_qqplot
 mapply(f_save,qqplots,names(qqplots),
        MoreArgs = list(output_folder=output_path,output_path="qq",
                        height=height_qq, width=width_qq),SIMPLIFY = FALSE)
-
-
-#-----------------------------------------------------------------------------------------------
- ## check for correlation between size and induction. 
-
-variances<-vector("list",2)
-
-for(k in c(1,2)){
-  variance<-vector()
-for(i in experiment_doses){
-  dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
-  var<-cor(dataframe[,3],dataframe[,5], method = "spearman")
-  variance<-c(variance,var)
-  
-}
-  variances[[k]]<-variance
-}
-
-spearman<-ggplot() +
-  geom_point(aes(x=experiment_doses, y=variances[[1]], colour="NF")) +
-  geom_point(aes(x=experiment_doses, y=variances[[2]], colour="pAct1")) +
-  theme_bw() +
-  scale_x_log10() +
-  ylab("Spearman Correlation") +
-  xlab("[aTc] (ng/mL)")
-
-f_save(spearman,"spearman.jpeg",output_path, "",10,15)
-
-models<-vector("list",2)
-
-for(k in c(1,2)){
-  model<-vector("list",24)
-  for(i in experiment_doses){
-    dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
-    mod<-lm(dataframe[,3]~dataframe[,5])
-    model[[which(experiment_doses==i)]]<-mod
-    
-  }
-  models[[k]]<-model
-}
-
-df<-df_with_size[[1]][which(df_with_size[[1]][,4]==0),]
-model_t<-lm(df[,3]~df[,5])
-summary(model_t)[4]$coefficients[2]
-
-
-summary(models[[1]][[1]])
-
-f_model_plotting<-function(model_list, df_list){
-  
-  final_plot<-ggplot() 
-  for(i in c(1:length(model_list))){
-    model<-model_list[[i]]
-    intercept<-summary(model)[4]$coefficients[1]
-    slope<-summary(model)[4]$coefficients[2]
-    dataframe<-df_list[which(df_list[,4]==experiment_doses[[i]]),]
-    
-    single_layer<-geom_line(aes_(x=dataframe[,5],y=intercept+(slope*dataframe[,5]), 
-                                                              colour=experiment_doses[[i]]))
-    final_plot<-final_plot+single_layer
-    
-  }
-  
-  pretty_plot<-final_plot +
-    theme_bw() +
-    xlab("Size") +
-    ylab("Estimated Fluorescence (a.u.)") +
-    ggtitle("Linear Fits") +
-    guides(colour=guide_legend(title="[aTc ng/mL]")) 
-  
-  return(pretty_plot)
-  
-}
-
-
-fit_plots<-mapply(f_model_plotting, models, df_with_size[c(1,2)], SIMPLIFY = F)
-
-
-
-f_slopes<-function(model_list, df_list){
-  
-  slopes<-vector() 
-  for(i in c(1:length(model_list))){
-    model<-model_list[[i]]
-    slope<-summary(model)[4]$coefficients[2]
-    slopes<-c(slopes,slope)
-  }
-  return(slopes)
-  
-}
-lapply(models,f_slopes)
-
-<f_rsquare_plots<-function(model_list, strain){
-  
-  final_plot<-ggplot() 
-  for(k in c(1:length(model_list))){
-  
-    models<-model_list[[k]]  
-  rsquares<-vector()
-  for(i in c(1:length(models))){
-    rsquare<-as.numeric(summary(models[[i]])[8])
-    rsquares<-c(rsquares,rsquare)
-    
-  }
- 
-  single_layer<-geom_point(aes_(x=experiment_doses,y=rsquares, colour=strain[k]))
-  final_plot<-final_plot+single_layer
-  }
-  
-  pretty_plot<-final_plot +
-    theme_bw() +
-    scale_x_log10()+
-    xlab("[aTc (ng/mL)]") +
-    ylab(expression(paste("R"^2," value",sep=""))) 
-    
-  
-  return(pretty_plot)
-  
-}
-            
-f_rsquare_plots(models,c("NF","pAct1"))
-
-
-
-
-dose17<-df_with_size[[1]][which(df_with_size[[1]][,4]==17),]
-dose20<-df_with_size[[1]][which(df_with_size[[1]][,4]==20),]
-
-ggplot() +
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17") +
-  
-  geom_point(aes(x=dose20[,5],y=dose20[,3]), colour="20") 
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17")
-
-ggplot() +
-  
-  geom_point(aes(x=dose17[,1],y=dose17[,2]), colour="17")  +
-  geom_point(aes(x=dose20[,1],y=dose20[,2]), colour="20") 

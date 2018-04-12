@@ -280,13 +280,14 @@ mapply(f_save,qqplots,names(qqplots),
 
 #-----------------------------------------------------------------------------------------------
  ## check for correlation between size and induction. 
+spearman_list<-df_with_size[[c(spearman_dfs)]]
 
-variances<-vector("list",2)
+variances<-vector("list",length(spearman_list))
 
-for(k in c(1,2)){
+for(k in c(1:length(spearman_list))){
   variance<-vector()
 for(i in experiment_doses){
-  dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
+  dataframe<-spearman_list[[k]][which(spearman_list[[k]][,4]==i),]
   var<-cor(dataframe[,3],dataframe[,5], method = "spearman")
   variance<-c(variance,var)
   
@@ -294,123 +295,118 @@ for(i in experiment_doses){
   variances[[k]]<-variance
 }
 
-spearman<-ggplot() +
-  geom_point(aes(x=experiment_doses, y=variances[[1]], colour="NF")) +
-  geom_point(aes(x=experiment_doses, y=variances[[2]], colour="pAct1")) +
-  theme_bw() +
-  scale_x_log10() +
-  ylab("Spearman Correlation") +
-  xlab("[aTc] (ng/mL)")
+spearman<-f_spearman_plot(variances,label_list_spearman)
+
 
 f_save(spearman,"spearman.jpeg",output_path, "",10,15)
 
-models<-vector("list",2)
-
-for(k in c(1,2)){
-  model<-vector("list",24)
-  for(i in experiment_doses){
-    dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
-    mod<-lm(dataframe[,3]~dataframe[,5])
-    model[[which(experiment_doses==i)]]<-mod
-    
-  }
-  models[[k]]<-model
-}
-
-df<-df_with_size[[1]][which(df_with_size[[1]][,4]==0),]
-model_t<-lm(df[,3]~df[,5])
-summary(model_t)[4]$coefficients[2]
-
-
-summary(models[[1]][[1]])
-
-f_model_plotting<-function(model_list, df_list){
-  
-  final_plot<-ggplot() 
-  for(i in c(1:length(model_list))){
-    model<-model_list[[i]]
-    intercept<-summary(model)[4]$coefficients[1]
-    slope<-summary(model)[4]$coefficients[2]
-    dataframe<-df_list[which(df_list[,4]==experiment_doses[[i]]),]
-    
-    single_layer<-geom_line(aes_(x=dataframe[,5],y=intercept+(slope*dataframe[,5]), 
-                                                              colour=experiment_doses[[i]]))
-    final_plot<-final_plot+single_layer
-    
-  }
-  
-  pretty_plot<-final_plot +
-    theme_bw() +
-    xlab("Size") +
-    ylab("Estimated Fluorescence (a.u.)") +
-    ggtitle("Linear Fits") +
-    guides(colour=guide_legend(title="[aTc ng/mL]")) 
-  
-  return(pretty_plot)
-  
-}
-
-
-fit_plots<-mapply(f_model_plotting, models, df_with_size[c(1,2)], SIMPLIFY = F)
-
-
-
-f_slopes<-function(model_list, df_list){
-  
-  slopes<-vector() 
-  for(i in c(1:length(model_list))){
-    model<-model_list[[i]]
-    slope<-summary(model)[4]$coefficients[2]
-    slopes<-c(slopes,slope)
-  }
-  return(slopes)
-  
-}
-lapply(models,f_slopes)
-
-<f_rsquare_plots<-function(model_list, strain){
-  
-  final_plot<-ggplot() 
-  for(k in c(1:length(model_list))){
-  
-    models<-model_list[[k]]  
-  rsquares<-vector()
-  for(i in c(1:length(models))){
-    rsquare<-as.numeric(summary(models[[i]])[8])
-    rsquares<-c(rsquares,rsquare)
-    
-  }
- 
-  single_layer<-geom_point(aes_(x=experiment_doses,y=rsquares, colour=strain[k]))
-  final_plot<-final_plot+single_layer
-  }
-  
-  pretty_plot<-final_plot +
-    theme_bw() +
-    scale_x_log10()+
-    xlab("[aTc (ng/mL)]") +
-    ylab(expression(paste("R"^2," value",sep=""))) 
-    
-  
-  return(pretty_plot)
-  
-}
-            
-f_rsquare_plots(models,c("NF","pAct1"))
-
-
-
-
-dose17<-df_with_size[[1]][which(df_with_size[[1]][,4]==17),]
-dose20<-df_with_size[[1]][which(df_with_size[[1]][,4]==20),]
-
-ggplot() +
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17") +
-  
-  geom_point(aes(x=dose20[,5],y=dose20[,3]), colour="20") 
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17")
-
-ggplot() +
-  
-  geom_point(aes(x=dose17[,1],y=dose17[,2]), colour="17")  +
-  geom_point(aes(x=dose20[,1],y=dose20[,2]), colour="20") 
+# models<-vector("list",2)
+# 
+# for(k in c(1,2)){
+#   model<-vector("list",24)
+#   for(i in experiment_doses){
+#     dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
+#     mod<-lm(dataframe[,3]~dataframe[,5])
+#     model[[which(experiment_doses==i)]]<-mod
+#     
+#   }
+#   models[[k]]<-model
+# }
+# 
+# df<-df_with_size[[1]][which(df_with_size[[1]][,4]==0),]
+# model_t<-lm(df[,3]~df[,5])
+# summary(model_t)[4]$coefficients[2]
+# 
+# 
+# summary(models[[1]][[1]])
+# 
+# f_model_plotting<-function(model_list, df_list){
+#   
+#   final_plot<-ggplot() 
+#   for(i in c(1:length(model_list))){
+#     model<-model_list[[i]]
+#     intercept<-summary(model)[4]$coefficients[1]
+#     slope<-summary(model)[4]$coefficients[2]
+#     dataframe<-df_list[which(df_list[,4]==experiment_doses[[i]]),]
+#     
+#     single_layer<-geom_line(aes_(x=dataframe[,5],y=intercept+(slope*dataframe[,5]), 
+#                                                               colour=experiment_doses[[i]]))
+#     final_plot<-final_plot+single_layer
+#     
+#   }
+#   
+#   pretty_plot<-final_plot +
+#     theme_bw() +
+#     xlab("Size") +
+#     ylab("Estimated Fluorescence (a.u.)") +
+#     ggtitle("Linear Fits") +
+#     guides(colour=guide_legend(title="[aTc ng/mL]")) 
+#   
+#   return(pretty_plot)
+#   
+# }
+# 
+# 
+# fit_plots<-mapply(f_model_plotting, models, df_with_size[c(1,2)], SIMPLIFY = F)
+# 
+# 
+# 
+# f_slopes<-function(model_list, df_list){
+#   
+#   slopes<-vector() 
+#   for(i in c(1:length(model_list))){
+#     model<-model_list[[i]]
+#     slope<-summary(model)[4]$coefficients[2]
+#     slopes<-c(slopes,slope)
+#   }
+#   return(slopes)
+#   
+# }
+# lapply(models,f_slopes)
+# 
+# <f_rsquare_plots<-function(model_list, strain){
+#   
+#   final_plot<-ggplot() 
+#   for(k in c(1:length(model_list))){
+#   
+#     models<-model_list[[k]]  
+#   rsquares<-vector()
+#   for(i in c(1:length(models))){
+#     rsquare<-as.numeric(summary(models[[i]])[8])
+#     rsquares<-c(rsquares,rsquare)
+#     
+#   }
+#  
+#   single_layer<-geom_point(aes_(x=experiment_doses,y=rsquares, colour=strain[k]))
+#   final_plot<-final_plot+single_layer
+#   }
+#   
+#   pretty_plot<-final_plot +
+#     theme_bw() +
+#     scale_x_log10()+
+#     xlab("[aTc (ng/mL)]") +
+#     ylab(expression(paste("R"^2," value",sep=""))) 
+#     
+#   
+#   return(pretty_plot)
+#   
+# }
+#             
+# f_rsquare_plots(models,c("NF","pAct1"))
+# 
+# 
+# 
+# 
+# dose17<-df_with_size[[1]][which(df_with_size[[1]][,4]==17),]
+# dose20<-df_with_size[[1]][which(df_with_size[[1]][,4]==20),]
+# 
+# ggplot() +
+#   geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17") +
+#   
+#   geom_point(aes(x=dose20[,5],y=dose20[,3]), colour="20") 
+#   geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17")
+# 
+# ggplot() +
+#   
+#   geom_point(aes(x=dose17[,1],y=dose17[,2]), colour="17")  +
+#   geom_point(aes(x=dose20[,1],y=dose20[,2]), colour="20") 

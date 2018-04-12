@@ -1,0 +1,258 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+data<-read.csv("180328_aTc_tox.csv")
+
+offset=FALSE
+average=FALSE
+
+
+```
+
+```{r}
+colnames(data)<-c("reading","well","content","description","filter","time","amplitude","phase",
+                  "amplitude2","temperature","humidity","O2","CO2","comments")
+
+data1<-subset(data,data$filter==1)
+data2<-subset(data,data$filter==2)
+data3<-subset(data,data$filter==3)
+
+data_to_use<-data2
+
+ypd<-subset(data_to_use,
+            data_to_use$well %in% c("A01","A02","A03","A04",
+                                    "A05","A06","A07","A08",
+                                    "B01","B02","B03","B04",
+                                    "B05","B06","B07","B08",
+                                    "C01","C02","C03","C04",
+                                    "C05","C06","C07","C08"))
+
+sd<-subset(data_to_use,
+            data_to_use$well %in% c("D01","D02","D03","D04",
+                                    "D05","D06","D07","D08",
+                                    "E01","E02","E03","E04",
+                                    "E05","E06","E07","E08",
+                                    "F01","F02","F03","F04",
+                                    "F05","F06","F07","F08"))
+
+f_replace<-function(dataframe,value){
+ 
+  dataframe[length(dataframe)]<-as.character(value)
+}
+
+f_doses<-function(dataframe,dose_list,well_list){
+
+dataframe<-cbind(dataframe,rep("new",nrow(dataframe)))
+dataframe[,ncol(dataframe)]<-as.character(dataframe[,ncol(dataframe)])
+colnames(dataframe)[ncol(dataframe)]<-"Dose"
+  
+for(i in seq(1,length(well_list)-1,2)){ 
+pick_rows<-c(which(dataframe[,2]==well_list[i]),which(dataframe[,2]==well_list[i+1]))
+
+k<-as.integer(i/2)+1
+dose<-dose_list[k]
+
+dataframe[pick_rows,ncol(dataframe)]<-apply(dataframe[pick_rows,],1,f_replace, value=dose)
+  }
+  return(dataframe)
+}
+
+well_list1<-c("A01","A02","A03","A04",
+                                    "A05","A06","A07","A08",
+                                    "B01","B02","B03","B04",
+                                    "B05","B06","B07","B08",
+                                    "C01","C02","C03","C04",
+                                    "C05","C06","C07","C08")
+
+well_list2<-c("D01","D02","D03","D04",
+                                    "D05","D06","D07","D08",
+                                    "E01","E02","E03","E04",
+                                    "E05","E06","E07","E08",
+                                    "F01","F02","F03","F04",
+                                    "F05","F06","F07","F08")
+
+dose_list<-c(0,50,100,200,300,400,500,600,700,800,1000,10000)
+
+ypd_d<-f_doses(ypd, dose_list,well_list1)
+sd_d<-f_doses(sd,dose_list, well_list2)
+```
+
+
+```{r}
+ # set to true if you want to offset everything such that the minimum of all the curves will be 1.  
+
+
+if(offset==TRUE){
+f_offset<-function(dataframe){
+  dataframe<-dataframe[,c(2,6,7,15)]
+  dataframe$well<-as.character(dataframe$well)
+for(i in unique(dataframe$well)){ 
+  # this function calculates the minimum of each growth curve per well.
+  # then substracts (this value-1) from all measurements to move the min of the curve to 1.
+
+  well_group<-dataframe[which(dataframe$well==i),] # select all measurements of a given well
+  minimum<-min(well_group$amplitude) # find minimum
+ 
+  for(j in c(1:nrow(well_group))){ # for each row in the selection
+    well_group[j,3]<-((well_group[j,3]-minimum)+1) # subtract the min and add 1.
+  }
+  
+  dataframe[which(dataframe$well==i),]<-well_group # replace the original dataframe with these new values.
+  
+}
+  return(dataframe)
+}
+
+ypd_d<-f_offset(ypd_d)
+sd_d<-f_offset(sd_d)
+
+}
+```
+
+
+```{r}
+library(ggplot2)
+
+
+f_plot<-function(dataframe,doses){
+ 
+    final_plot<-ggplot()
+    
+    for(i in doses){
+      
+      dataframe_d<-subset(dataframe,dataframe$"Dose"==as.character(i))
+      wells<-unique(dataframe_d$"well")
+      
+      for(k in wells){
+        dataframe_w<-subset(dataframe_d,dataframe_d$"well"==k)
+        single_layer<-geom_line(aes_(y=dataframe_w$"amplitude", x=dataframe_w$"time",
+                                     colour=as.character(i)))
+        
+        final_plot<-final_plot + single_layer
+      
+        }
+      
+    }
+      
+    pretty_plot<-final_plot +
+      scale_x_continuous(limits=c(0,NA)) +
+      theme_bw() +
+      xlab("Time (h)") +
+      ylab("Amplitude") +
+      # scale_color_manual(values = c(
+      #   "0"="grey95",
+      #   "50"="grey85",
+      #   "100"="grey80",
+      #   "200"="grey70",
+      #   "300"="grey60",
+      #   "400"="grey50",
+      #   "500"="grey40",
+      #   "600"="grey30",
+      #   "700"="grey20",
+      #   "800"="grey10",
+      #   "1000"="black",
+      #   "10000"="red"
+      # ))
+      scale_colour_manual(values = c(
+        "0"="black",
+        "50"="lightblue",
+        "100"="blue",
+        "200"="pink",
+        "300"="purple",
+        "700"="lightgreen",
+        "1000"="green",
+        "10000"="red"))
+  
+}
+# get a plot for each condition
+dose_list_plot<-c(0,50,100,200,300,700,1000,10000)
+plot_ypd<-f_plot(ypd_d,dose_list_plot)
+plot_ypd
+plot_sd<-f_plot(sd_d,dose_list_plot)
+plot_sd
+
+plot_list<-list(plot_ypd,plot_sd) # make a list for saving
+
+names<-c("ypd","sd") # make a list of names for saving
+
+if(offset==TRUE){ # to add "_offset" at the end of the name if saving offset data
+for(i in names){
+  name<-paste(i,"_offset",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+
+
+f_save<-function(plot,name){
+  
+  print(plot)
+  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/march18/180328_aTc_tox_biolector", height=10, width=15, units = "cm")
+}
+
+mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
+
+```
+
+
+```{r}
+
+f_numerical_slope_estimation<-function(data_frame,y_column,x_column){
+  
+all_slope_frames<-list()  
+
+for(k in well_list1)  {
+  dataframe<-data_frame[which(data_frame[,2]==k),]
+  slope_frame<-t(data.frame(c(0,0)))
+  
+  for(i in c(1:nrow(dataframe))){
+  y1<-dataframe[i,y_column]
+  y2<-dataframe[i+1,y_column]
+  
+  x1<-dataframe[i,x_column]
+  x2<-dataframe[i+1,x_column]
+  
+  slope<-(y2-y1)/(x2-x1)
+  
+  slope_frame<-rbind(slope_frame,cbind(x1,slope))
+  slope_frame<-as.data.frame(slope_frame)
+  rownames(slope_frame)<-c(1:nrow(slope_frame))
+ # slope_frame<-as.data.frame(slope_frame)[-1,]
+  }
+  position<-which(well_list1==k)
+  all_slope_frames[[position]]<-slope_frame
+}
+  return(all_slope_frames)
+  
+}
+
+ypd_slope<-f_numerical_slope_estimation(ypd_d,7,6)
+
+
+
+f_subset<-function(dataframe){
+  dataframe<-subset(dataframe,dataframe[,2]>0)
+  return(dataframe)
+}
+
+ypd_slope_subset<-lapply(ypd_slope,f_subset)
+
+str(ypd_slope_subset)
+```
+
+
+```{r}
+
+
+```
+
+```{r}
+
+```
+

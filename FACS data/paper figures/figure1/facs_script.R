@@ -7,6 +7,8 @@ t2p1<-f_read(t2p1_file,pattern_read)
 t3p1<-f_read(t3p1_file,pattern_read)
 t4p1<-f_read(t4p1_file,pattern_read)
 t5p1<-f_read(t5p1_file,pattern_read)
+t6p1<-f_read(t6p1_file,pattern_read)
+t7p1<-f_read(t7p1_file,pattern_read)
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
 df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
@@ -14,7 +16,9 @@ df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,column
            f_df_list(t1p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
            f_df_list(t4p1,starting_well,2,c(0,200),columns_to_include),
            f_df_list(t2p1,starting_well,24,experiment_doses,columns_to_include),
-           f_df_list(t5p1,starting_well,2,c(0,200),columns_to_include)
+           f_df_list(t5p1,starting_well,2,c(0,200),columns_to_include),
+           f_df_list(t6p1,starting_well,24,experiment_doses,columns_to_include),
+           f_df_list(t7p1,starting_well,2,c(0,200),columns_to_include)
            )
 #----------------------------------------------------------------------------------
 ##create names for the dataframe list
@@ -80,4 +84,8 @@ sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list)
 f_save(sigmoid_plot,paste("sigmoid_fit_weighted.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
+
+
+
+
 

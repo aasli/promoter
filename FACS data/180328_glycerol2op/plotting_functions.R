@@ -1,6 +1,5 @@
 
 library(ggplot2)
-library(tcpl)
 
 
 
@@ -244,14 +243,15 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
   frame <- (grep(name, names(data_list), value= FALSE))
   
   plot<-ggplot() +
-    geom_point(aes_(x=data_list[[frame[1]]][,dose_column],
-                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]])) +
-    # geom_point(aes(x=data_list[[frame[2]]][,dose_column],
-    #                y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]]),
-    #            size=size_value_descriptives) +
-    # geom_point(aes(x=data_list[[frame[3]]][,dose_column],
-    #                y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]]),
-    #            size=size_value_descriptives) +
+    geom_point(aes(x=data_list[[frame[1]]][,dose_column],
+                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]]),
+               size=size_value_descriptives) +
+    geom_point(aes(x=data_list[[frame[2]]][,dose_column],
+                   y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]]),
+               size=size_value_descriptives) +
+    geom_point(aes(x=data_list[[frame[3]]][,dose_column],
+                   y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]]),
+               size=size_value_descriptives) +
     # geom_point(aes(x=data_list[[frame[4]]][,dose_column],
     #                y=data_list[[frame[4]]][,stat_column], colour=colour_labels[[4]]),
     #            size=size_value_descriptives) +
@@ -263,6 +263,8 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
     xlab(xlab_title) +
     ylab(ylab_title) +
     guides(colour=guide_legend(title=legend_title)) 
+  
+  
   return(plot)
 }
 
@@ -285,21 +287,21 @@ f_descriptive_plotting<-function(){
   
   for(i in stat_columns_1){
     
-    plot_list<-lapply(strain_names[c(1,2)],f_point_plots,
-                      data_list = descriptives[c(1,2)], dose_column = 8, stat_column = i,
+    plot_list<-lapply(strain_names,f_point_plots,
+                      data_list = descriptives, dose_column = 8, stat_column = i,
                       palette=palette,colour_labels=colour_labels,scale_x_breaks=scale_x_breaks,
                       xlab_title=xlab_title,ylab_title=ylab_title,legend_title=legend_title)
-    names(plot_list) <- strain_names[c(1,2)]
+    names(plot_list) <- strain_names
     
     all_plots_1<-c(all_plots_1,plot_list)
   }
   
   for(i in stat_columns_2){
-    plot_list<-lapply(strain_names[c(1,2)],f_point_plots,
-                      data_list = descriptives[c(1,2)], dose_column = 8, stat_column = i,
+    plot_list<-lapply(strain_names,f_point_plots,
+                      data_list = descriptives, dose_column = 8, stat_column = i,
                       palette=palette,colour_labels=colour_labels,scale_x_breaks=scale_x_breaks,
                       xlab_title=xlab_title,ylab_title=ylab_title,legend_title=legend_title)
-    names(plot_list) <- strain_names[c(1,2)]
+    names(plot_list) <- strain_names
     
     all_plots_2<-c(all_plots_2,plot_list)
   }
@@ -489,46 +491,12 @@ f_sigmoid_fit<-function(params,x_values){
 
 f_plot_sigmoid_curves<-
   # plot the fitted line and the individual data points. 
-  function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list, doses, 
-           dataframe_list){
-  
-    density_list<-vector(mode="list")
-  # get density estimates for plotting
+  function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list){
     
-    for(i in c(1:length(dataframe_list))){
-      density<-c()
-      for(k in doses){
-      frame<-dataframe_list[[i]][which(dataframe_list[[i]][,4]==k),]
-      dose_density<-density(frame[,3])
-      
-      density<-rbind(density,cbind(as.data.frame(dose_density[c(1,2)]),rep(k,length(dose_density$x))))
-      }
-      
-      
-      if((i%%2)==1){
-        density$y <- density$y * -1
-      }
-      
-      density_list[[i]]<-(density)
-      }
-    
-    
-  
-  
     final_plot<-ggplot() 
-    
-    # plot density estimates
-    for (i in c(1:length(density_list))){
-      
-      single_layer_density<- geom_polygon(aes_(x=density[,3], y=density$x))
-                                          
-      final_plot<-final_plot+single_layer_density
-    }
-    
-    
     # plot the lines
     for (i in c(1:length(fit_list))){
-      single_layer_line<- geom_line(aes_(x=x_values_plotting, y=fit_list[[i]],
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
                                          colour=label_list_sigmoid[[i]]),size=1)
       final_plot<-final_plot+single_layer_line
     }
@@ -596,45 +564,6 @@ f_plot_sigmoid_curves<-
     return(pretty_plot)
   }
 
-#----------------------------------------------------------------------------------------
-## plot derivative of the sigmoid fit
-
-f_fit_function<-function(x) (e + (a-e)/((1 + ((((x/c)^b))^(d)))))
-d_fit_function<-D(body(f_fit_function),'x')
-
-f_d_sigmoid <- function(params, x) {
-  -((params[1] - params[5]) * ((1 + ((x/params[3])^params[2]))^((params[4]) - 1) * 
-                                 ((params[4]) * ((x/params[3])^(params[2] - 1) * 
-                                                   (params[2] * (1/params[3])))))/((1 +
-                                                                                      ((x/params[3])^params[2]))^
-                                                                                     (params[4]))^2)
-}
-
-
-f_d_sigmoid_fit<-function(params,x_values_d){    
-  sigmoid_fit <- f_d_sigmoid(params,x_values_d)
-  return(sigmoid_fit)
-}
-
-f_plot_sigmoid_d<-function(x_values_d, y_values, label_list){
-  
-  final_plot<- ggplot() 
-  
-  for(i in c(1:length(y_values))){
-    single_layer<-geom_line(aes_(x=x_values_d,y=y_values[[i]], colour=label_list[[i]]))
-    final_plot<-final_plot+single_layer
-  }
-  
-  pretty_plot<-final_plot +
-    theme_bw() +
-    theme(legend.position = c(0.8,0.8)) +
-    guides(colour=guide_legend(title = "Strain")) +
-    ylab("D of Sigmoid Fit") +
-    xlab("Dose") +
-    scale_color_manual(values = c("red","blue"))
-  
-  return(pretty_plot)
-}
 
 #----------------------------------------------------------------------------------------
 
@@ -660,19 +589,17 @@ return(qqplot)
 
 }
 
-
 #----------------------------------------------------------------------------------------
-
 ## plotting each dose individually to see distributions. 
 
-f_individual_histograms<-function(dataframe, xlimits, x_breaks,y_breaks, ylimits){
+f_individual_histograms<-function(dataframe, xlimits, x_breaks,y_breaks){
   f_formatter_x<-function(x){x/1000}
   x_labels<-f_formatter_x(x_breaks)
   
   f_formatter_y<-function(y){y*10000}
   y_labels<-f_formatter_y(y_breaks)
   
-  # dataframe<-subset(dataframe,dataframe[,2])
+ # dataframe<-subset(dataframe,dataframe[,2])
   final_plot<-ggplot(dataframe) +
     geom_density(aes(x=dataframe[,3]))+
     facet_wrap(~Dose) +
@@ -680,33 +607,111 @@ f_individual_histograms<-function(dataframe, xlimits, x_breaks,y_breaks, ylimits
     theme(panel.background = element_blank(),
           panel.grid = element_blank(), 
           strip.text.x = element_text(size=3,
-                                      margin=margin(0,0,0,0,"cm"))) +
+                                    margin=margin(0,0,0,0,"cm"))) +
     scale_x_continuous(limits = xlimits, breaks=x_breaks,labels=x_labels) +
-    scale_y_continuous(limits= ylimits, breaks = y_breaks, labels = y_labels) +
+    scale_y_continuous(breaks = y_breaks, labels = y_labels) +
     ylab(expression(paste("Density",10^-4,sep = " "))) +
     xlab(expression(paste("Fluorescence",10^3,sep = " "))) 
-  
+    
   
   return(final_plot)
   
   
 }
 
+x_limits_individual_histogram<-c(0,100000)
+x_breaks_individual_histogram<-c(0,9000,25000,50000)
+y_breaks_individual_histogram<-c(0,0.0001,0.0002)
+
+histogram_grid<-lapply(df_list[c(1,2)], f_individual_histograms,x_limits_individual_histogram,
+                                        x_breaks_individual_histogram, y_breaks_individual_histogram)
+
+mapply(f_save,histogram_grid, c("histogram_gridNF.jpeg","histogram_gridpAct1"),
+       MoreArgs = list(output_path, "", 10, 15))
 
 #----------------------------------------------------------------------------------------
+f_individual_sizes<-function(dataframe, xlimits, x_breaks, y_limits,y_breaks,horw,doses,size_value,
+                             number){
+  
+  f_formatter_x<-function(x){x/10000}
+  x_labels<-f_formatter_x(x_breaks)
+  
+  f_formatter_y<-function(y){y/10000}
+  y_labels<-f_formatter_y(y_breaks)
 
-# library(dplyr)
-# 
-# 
-# 
-# density1<-density((group_by(df_list[[1]],Dose)[,3])[[1]])
-# density2<-density(df_list[[2]][which(df_list[[2]][,4]==0),3])
-# 
-# density2$y<-density2$y * -1
-# 
-# 
-# ggplot( )+
-#   geom_polygon(aes(y=density1[[1]],x=density1[[2]])) +
-#   geom_polygon(aes(y=density2[[1]],x=density2[[2]]))
-#   scale_x_continuous(breaks = c(0), labels = "0")
+  dataframe<-subset(dataframe,dataframe[,4] %in% doses)
+ #  
+ # all_plots<-vector(mode = "list")
+ #  
+ #  for(i in doses){
+ #    dataframe_off<-subset(dataframe,dataframe[,3]<8000 &
+ #                             dataframe[,4]==i)
+ #    dataframe_middle<-subset(dataframe,dataframe[,3]>8000 &
+ #                               dataframe[,3]<10000 &
+ #                                dataframe[,4]==i)
+ #    dataframe_on<-subset(dataframe,dataframe[,3]>10000 &
+ #                            dataframe[,4]==i)
+ #      
+  plot<-ggplot(dataframe) +
+    geom_point(aes_(x=dataframe[,1],dataframe[,2],colour=dataframe[,3]), size=size_value) +
+    facet_wrap(~Dose) +
+    # geom_point(aes_(x=dataframe_on[,1], y=dataframe_on[,2], colour="on"),size=size_value) +
+    # geom_point(aes_(x=dataframe_off[,1], y=dataframe_off[,2], colour="off"),size=size_value)+
+    # geom_point(aes_(x=dataframe_middle[,1], y=dataframe_middle[,2], colour="middle"),size=size_value)+
+    
+    theme(panel.background = element_blank(),
+          axis.line = element_line(),
+          panel.grid.minor =  element_blank(),
+          legend.position = "none",
+          axis.text = element_text(size=3),
+          strip.text.x = element_text(size=2,
+                                      margin=margin(0,0,0,0,"cm"))) +
+    scale_x_continuous(limits = xlimits, breaks=x_breaks,labels=x_labels) +
+    scale_y_continuous(limits= y_limits, breaks = y_breaks, labels = y_labels) +
+    ylab(expression(paste("FSC-",H,10^4,sep = " "))) +
+    xlab(expression(paste("SSC-",H,10^4,sep = " "))) +
+    
+    #scale_color_manual(values = c("off"="red","middle"="green","on"="blue")) +
+    scale_colour_gradient(low = "black", high = "lightblue") +
+    xlab("") +
+    ylab("")
+  
+  #all_plots[[which(doses==i)]]<-plot
+  
+  #}
+    
+  #final_plot<-cowplot::plot_grid(plotlist = all_plots,labels = doses, label_size = 2) 
+  final_plot<-plot
+  f_save(final_plot, paste("size_grid",number,".jpeg",sep = ""), output_path, "", 10, 15)
+  return(final_plot)
+  
+  
+}
 
+
+x_limits_individual_sizes<-c(0000,150000)
+y_limits_individual_sizes<-c(0000,150000)
+x_breaks_individual_sizes<-c(40000,100000,150000)
+y_breaks_individual_sizes<-c(0,25000,50000,150000)
+size_value_individual_sizes<-0.3
+
+
+individual_size_plots<-
+  c(f_individual_sizes(df_list[[1]],x_limits_individual_sizes,x_breaks_individual_sizes,
+                   y_limits_individual_sizes,y_breaks_individual_sizes,"W",experiment_doses[c(1:6)],
+                   size_value_individual_sizes,1),
+    f_individual_sizes(df_list[[1]],x_limits_individual_sizes,x_breaks_individual_sizes,
+                       y_limits_individual_sizes,y_breaks_individual_sizes,"W",experiment_doses[c(7:12)],
+                       size_value_individual_sizes,2),
+    f_individual_sizes(df_list[[1]],x_limits_individual_sizes,x_breaks_individual_sizes,
+                       y_limits_individual_sizes,y_breaks_individual_sizes,"W",experiment_doses[c(13:18)],
+                       size_value_individual_sizes,3),
+    f_individual_sizes(df_list[[1]],x_limits_individual_sizes,x_breaks_individual_sizes,
+                       y_limits_individual_sizes,y_breaks_individual_sizes,"W",experiment_doses[c(19:24)],
+                       size_value_individual_sizes,4))
+
+
+mapply(f_individual_sizes,df_list[c(1,2)],number=c("NF-H","pAct-H"),
+       MoreArgs = list(x_limits_individual_sizes,x_breaks_individual_sizes,
+                   y_limits_individual_sizes,y_breaks_individual_sizes,"W",experiment_doses,
+                   size_value_individual_sizes))
