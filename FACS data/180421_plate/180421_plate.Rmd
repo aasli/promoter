@@ -1,0 +1,37 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+t0p1_file<-"C:/Users/aslia/Desktop/pisi/ETH/master project/FACS data/180421_plateaTc/plate"
+experiment_doses<-c(0,3,8,15,20,30,50,80,200,400,600,1000)
+dose_descriptives<-experiment_doses
+# read fcs files
+t0p1<-read.flowSet(path = t0p1_file,pattern = "Specimen")
+
+df_list<-f_df_list(t0p1,1,12,experiment_doses,c(3,6,7))
+
+
+descriptives<-mapply(f_descriptives,df_list,
+                       MoreArgs = list(column=3),SIMPLIFY = F)
+
+plot_frame<-descriptives[[1]]
+plot_frame2<-descriptives[[2]]
+
+ggplot() +
+  geom_point(aes(x=plot_frame[,8], y=plot_frame[,1])) +
+  theme_bw() +
+  xlab("aTc[ng/mL] on plate") +
+  ylab("Fluorescence (a.u.)") +
+  scale_x_log10(breaks=experiment_doses, labels=experiment_doses) +
+  ggtitle("FRY 2759 Grown on YPD+aTc plate")
+
+ggsave(filename = "plate_assay.jpeg",path = "C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/april18/180421_plateaTc", width = 15, height=10, units = "cm" )
+
+```
+

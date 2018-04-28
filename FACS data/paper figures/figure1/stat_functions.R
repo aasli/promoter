@@ -2,7 +2,7 @@
 
 # generate summary statistics from a dataframe
 
-f_descriptives<-function(data_frame,column){
+f_descriptives<-function(data_frame,dose_descriptives,column){
   final_data_frame<-data.frame()
   data_frame<-as.data.frame(data_frame)
   for (i in dose_descriptives){

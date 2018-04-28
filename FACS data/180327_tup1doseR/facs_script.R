@@ -174,7 +174,7 @@ grid_plots_density<- lapply(name_list_density,f_density_grid,plot_list=density_p
 
 names(grid_plots_density)<-name_list_density
 
-mapply(f_save,grid_plots_density,names(grid_plots_density),
+mapply(f_save,density_plots,paste(names(density_plots),"grid"),
        MoreArgs = list(output_folder=output_path,output_path="density",
                        height=height_density, width=width_density),SIMPLIFY = FALSE)
 

@@ -320,18 +320,23 @@ f_descriptive_plotting<-function(){
 f_density_plot<-function(dataframe,labels,doses,size_column, citrine_column, 
                          legend_position,palette, x_breaks, legend_title, ncol_legend){
   
-  final_plot<-ggplot()  
-  dataframe<-as.data.frame(dataframe)
-  for(i in doses){
-    single_layer<- geom_density_2d(
-      aes_(x=dataframe[which(dataframe[,dose_column]==i),size_column],
-           y=dataframe[which(dataframe[,dose_column]==i),citrine_column],
-           colour=labels[which(doses==i)]), 
-      size=1) 
-    
-    final_plot<- final_plot + single_layer
-  }
-  
+  # final_plot<-ggplot()  
+   dataframe<-as.data.frame(dataframe)
+  # for(i in doses){
+  #   single_layer<- geom_density_2d(
+  #     aes_(x=dataframe[which(dataframe[,dose_column]==i),size_column],
+  #          y=dataframe[which(dataframe[,dose_column]==i),citrine_column],
+  #          colour=labels[which(doses==i)]), 
+  #     size=1) 
+  #   
+  #   final_plot<- final_plot + single_layer
+  # }
+  final_plot<- 
+    ggplot(dataframe) +
+    geom_density_2d(
+        aes_(x=dataframe[,size_column],
+             y=dataframe[,citrine_column])) +
+    facet_wrap(~Dose)
   
   pretty_plot<- final_plot + 
     theme_bw() + 
@@ -340,7 +345,10 @@ f_density_plot<-function(dataframe,labels,doses,size_column, citrine_column,
           legend.text = element_text(size=6),
           legend.key.size = unit(0.3,"cm"),
           legend.background = element_blank(),
-          plot.title = element_text(size=8,face="bold")) +
+          plot.title = element_text(size=8,face="bold"), 
+          axis.title = element_text(size=6),
+          axis.text = element_text(size=6),
+          strip.text = element_text(size=4)) +
     xlab("Size") + ylab("Fluorescence (a.u.)") +
     scale_colour_manual(values = palette,
                         breaks = x_breaks) +

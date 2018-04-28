@@ -39,6 +39,7 @@ df_list<-size_subset_df
 
 descriptives<-c(lapply(df_list,f_descriptives,column=cols_descriptives))
 
+
 #----------------------------------------------------------------------------------
 
 # smoothed dose response
@@ -196,7 +197,6 @@ library("minpack.lm")
 frame_list<-descriptives[descriptives_to_use_sigmoid]
 label_list_sigmoid<-label_list[labels_to_use]
 
-
 #define x axis doses and the labels for plotting
 doses_experiment<-frame_list[[1]][,8]
 breaks_sigmoid<-c(0.1,doses_experiment[c(2:length(doses_experiment))])
@@ -232,7 +232,7 @@ ec_list_descriptives<-lapply(parameters,f_ecs)
 sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
                                     control_list_sigmoid, ec_list_descriptives)
 
-f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr_nc.jpeg",time_point_sigmoid,sep = "_"),
+f_save(sigmoid_plot,paste("sigmoid_fit_weighted_5pr_nc_rank.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
@@ -297,10 +297,14 @@ for(i in experiment_doses){
 spearman<-ggplot() +
   geom_point(aes(x=experiment_doses, y=variances[[1]], colour="NF")) +
   geom_point(aes(x=experiment_doses, y=variances[[2]], colour="pAct1")) +
+  # geom_point(aes(x=experiment_doses, y=variances[[3]], colour="no repressor")) +
+  # geom_point(aes(x=experiment_doses, y=variances[[4]], colour="pTHD3_citrine")) +
   theme_bw() +
   scale_x_log10() +
   ylab("Spearman Correlation") +
+ # scale_color_manual(values=c("red","lightblue","black","purple")) +
   xlab("[aTc] (ng/mL)")
+  #ylim(0.45,0.85)
 
 f_save(spearman,"spearman.jpeg",output_path, "",10,15)
 
@@ -317,14 +321,9 @@ for(k in c(1,2)){
   models[[k]]<-model
 }
 
-df<-df_with_size[[1]][which(df_with_size[[1]][,4]==0),]
-model_t<-lm(df[,3]~df[,5])
-summary(model_t)[4]$coefficients[2]
 
 
-summary(models[[1]][[1]])
-
-f_model_plotting<-function(model_list, df_list){
+f_model_plotting<-function(model_list, df_list,title,column){
   
   final_plot<-ggplot() 
   for(i in c(1:length(model_list))){
@@ -333,7 +332,7 @@ f_model_plotting<-function(model_list, df_list){
     slope<-summary(model)[4]$coefficients[2]
     dataframe<-df_list[which(df_list[,4]==experiment_doses[[i]]),]
     
-    single_layer<-geom_line(aes_(x=dataframe[,5],y=intercept+(slope*dataframe[,5]), 
+    single_layer<-geom_line(aes_(x=dataframe[,column],y=intercept+(slope*dataframe[,column]), 
                                                               colour=experiment_doses[[i]]))
     final_plot<-final_plot+single_layer
     
@@ -343,17 +342,23 @@ f_model_plotting<-function(model_list, df_list){
     theme_bw() +
     xlab("Size") +
     ylab("Estimated Fluorescence (a.u.)") +
-    ggtitle("Linear Fits") +
-    guides(colour=guide_legend(title="[aTc ng/mL]")) 
+    ggtitle(paste("Linear Fits",title)) +
+    guides(colour=guide_legend(title="[aTc ng/mL]", ncol=2)) 
   
   return(pretty_plot)
   
 }
 
 
-fit_plots<-mapply(f_model_plotting, models, df_with_size[c(1,2)], SIMPLIFY = F)
+fit_plots<-mapply(f_model_plotting, models, df_with_size[c(1,2)], MoreArgs = list("Raw Data",5), SIMPLIFY = F)
+fit_plots_grid<-cowplot::plot_grid(fit_plots[[1]]+theme(legend.position = "none"),
+                                   fit_plots[[2]]+theme(legend.text = element_text(size=6),
+                                                        legend.title = element_text(size=6), 
+                                                        legend.direction = "horizontal",
+                                                        legend.position = "bottom"))
 
 
+f_save(fit_plots_grid,"fit_plots.jpeg",output_path,"",10,15)
 
 f_slopes<-function(model_list, df_list){
   
@@ -368,7 +373,7 @@ f_slopes<-function(model_list, df_list){
 }
 lapply(models,f_slopes)
 
-<f_rsquare_plots<-function(model_list, strain){
+f_rsquare_plots<-function(model_list, strain, title){
   
   final_plot<-ggplot() 
   for(k in c(1:length(model_list))){
@@ -389,28 +394,58 @@ lapply(models,f_slopes)
     theme_bw() +
     scale_x_log10()+
     xlab("[aTc (ng/mL)]") +
-    ylab(expression(paste("R"^2," value",sep=""))) 
+    ylab(expression(paste("R"^2," value",sep=""))) +
+    ggtitle(title)
     
   
   return(pretty_plot)
   
 }
             
-f_rsquare_plots(models,c("NF","pAct1"))
+rsquare_plots<-f_rsquare_plots(models,c("NF","pAct1"), "raw data")
+
+f_save(rsquare_plots,"rsquare_plots.jpeg",output_path,"",10,15)
 
 
 
-
-dose17<-df_with_size[[1]][which(df_with_size[[1]][,4]==17),]
-dose20<-df_with_size[[1]][which(df_with_size[[1]][,4]==20),]
-
-ggplot() +
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17") +
+for (i in c(1:length(df_with_size))){
+  df<-df_with_size[[i]]
+  for(k in experiment_doses){
+  df_dose<-df[which(df[,4]==k),]  
+  df[which(df[,4]==k),6]<-rank(df_dose[,3])
+  df[which(df[,4]==k),7]<-rank(df_dose[,5])
+  }
+  colnames(df)<-c(colnames(df[c(1:4)]),"size","rank_citrine","rank_size")
+  df_with_size[[i]]<-df
   
-  geom_point(aes(x=dose20[,5],y=dose20[,3]), colour="20") 
-  geom_point(aes(x=dose17[,5],y=dose17[,3]), colour="17")
+}
 
-ggplot() +
-  
-  geom_point(aes(x=dose17[,1],y=dose17[,2]), colour="17")  +
-  geom_point(aes(x=dose20[,1],y=dose20[,2]), colour="20") 
+models_rank<-vector("list",2)
+
+for(k in c(1,2)){
+  model<-vector("list",24)
+  for(i in experiment_doses){
+    dataframe<-df_with_size[[k]][which(df_with_size[[k]][,4]==i),]
+    mod<-lm(dataframe[,6]~dataframe[,7])
+    model[[which(experiment_doses==i)]]<-mod
+    
+  }
+  models_rank[[k]]<-model
+}
+
+fit_plots_rank<-mapply(f_model_plotting, models_rank, df_with_size[c(1,2)], MoreArgs = 
+                         list("ranked",7),SIMPLIFY = F)
+fit_plots_rank_grid<-cowplot::plot_grid(fit_plots_rank[[1]]+theme(legend.position = "none"),
+                                   fit_plots_rank[[2]]+theme(legend.text = element_text(size=6),
+                                                        legend.title = element_text(size=6), 
+                                                        legend.direction = "horizontal",
+                                                        legend.position = "bottom"))
+
+
+f_save(fit_plots_rank_grid,"fit_plots_rank.jpeg",output_path,"",10,15)
+
+rsquare_plots_rank<-f_rsquare_plots(models_rank,c("NF","pAct1"), "Ranked")
+
+f_save(rsquare_plots_rank,"rsquare_plots_rank.jpeg",output_path,"",10,15)
+
+

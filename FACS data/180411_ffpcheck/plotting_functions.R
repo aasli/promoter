@@ -492,39 +492,39 @@ f_plot_sigmoid_curves<-
   function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list, doses, 
            dataframe_list){
   
-    density_list<-vector(mode="list")
-  # get density estimates for plotting
-    
-    for(i in c(1:length(dataframe_list))){
-      density<-c()
-      for(k in doses){
-      frame<-dataframe_list[[i]][which(dataframe_list[[i]][,4]==k),]
-      dose_density<-density(frame[,3])
-      
-      density<-rbind(density,cbind(as.data.frame(dose_density[c(1,2)]),rep(k,length(dose_density$x))))
-      }
-      
-      
-      if((i%%2)==1){
-        density$y <- density$y * -1
-      }
-      
-      density_list[[i]]<-(density)
-      }
-    
+    #density_list<-vector(mode="list")
+  # # get density estimates for plotting
+  #   
+  #   for(i in c(1:length(dataframe_list))){
+  #     density<-c()
+  #     for(k in doses){
+  #     frame<-dataframe_list[[i]][which(dataframe_list[[i]][,4]==k),]
+  #     dose_density<-density(frame[,3])
+  #     
+  #     density<-rbind(density,cbind(as.data.frame(dose_density[c(1,2)]),rep(k,length(dose_density$x))))
+  #     }
+  #     
+  #     
+  #     if((i%%2)==1){
+  #       density$y <- density$y * -1
+  #     }
+  #     
+  #     density_list[[i]]<-(density)
+  #     }
+  #   
     
   
   
-    final_plot<-ggplot() 
-    
-    # plot density estimates
-    for (i in c(1:length(density_list))){
-      
-      single_layer_density<- geom_polygon(aes_(x=density[,3], y=density$x))
-                                          
-      final_plot<-final_plot+single_layer_density
-    }
-    
+     final_plot<-ggplot() 
+    # 
+    # # plot density estimates
+    # for (i in c(1:length(density_list))){
+    #   
+    #   single_layer_density<- geom_polygon(aes_(x=density[,3], y=density$x))
+    #                                       
+    #   final_plot<-final_plot+single_layer_density
+    # }
+    # 
     
     # plot the lines
     for (i in c(1:length(fit_list))){
@@ -540,43 +540,43 @@ f_plot_sigmoid_curves<-
       final_plot<-final_plot+single_layer_point
     }
     
-    # # plot controls
-    # for (k in c(1:length(control_list))){
-    #   single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
-    #                                      y=control_list[[k]][,1][c(1,24)],
-    #                                        colour=control_list_sigmoid[[k]]))   
-    #   final_plot<-final_plot+single_layer_line
-    # }
-    
-    for(l in c(1:length(ec_list))){
-      ec10<-round(ec_list[[l]][1],2)
-      ec10_xvalue<-mean(which(round(x_values,2)==ec10))
-      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
-      
-      ec50<-round(ec_list[[l]][2],2)
-      ec50_xvalue<-mean(which(round(x_values,2)==ec50))
-      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
-      
-      ec90<-round(ec_list[[l]][3],1)
-      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
-      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
-      print(ec90)
-      print(ec90_xvalue)
-      print(ec90_yvalue)
-      
-      ec10_layer<-geom_point(aes_(x=ec10,
-                                 y=ec10_yvalue,
-                                 colour="EC10")) 
-      ec50_layer<-geom_point(aes_(x=ec50,
-                                 y=ec50_yvalue,
-                                 colour="EC50")) 
-      ec90_layer<-geom_point(aes_(x=ec90,
-                                 y=ec90_yvalue,
-                                 colour="EC90")) 
-      
-      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
-      
+    # plot controls
+    for (k in c(1:length(control_list))){
+      single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
+                                         y=control_list[[k]][,1][c(1,24)],
+                                           linetype=control_list_sigmoid[[k]]))
+      final_plot<-final_plot+single_layer_line
     }
+    
+    # for(l in c(1:length(ec_list))){
+    #   ec10<-round(ec_list[[l]][1],0)
+    #   ec10_xvalue<-mean(which(round(x_values,0)==ec10))
+    #   ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+    #   
+    #   ec50<-round(ec_list[[l]][2],0)
+    #   ec50_xvalue<-mean(which(round(x_values,0)==ec50))
+    #   ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+    #   
+    #   ec90<-round(ec_list[[l]][3],0)
+    #   ec90_xvalue<-mean(which(round(x_values,0)==ec90))
+    #   ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+    #   print(ec90)
+    #   print(ec90_xvalue)
+    #   print(ec90_yvalue)
+    #   
+    #   ec10_layer<-geom_point(aes_(x=ec10,
+    #                              y=ec10_yvalue,
+    #                              colour="EC10")) 
+    #   ec50_layer<-geom_point(aes_(x=ec50,
+    #                              y=ec50_yvalue,
+    #                              colour="EC50")) 
+    #   ec90_layer<-geom_point(aes_(x=ec90,
+    #                              y=ec90_yvalue,
+    #                              colour="EC90")) 
+    #   
+    #   final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+    #   
+    # }
     
     
     pretty_plot<-final_plot +
@@ -584,13 +584,15 @@ f_plot_sigmoid_curves<-
       scale_x_log10(breaks = breaks_sigmoid,
                     labels = labels_x_axis) +
       guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      guides(linetype=guide_legend(title = "Controls",nrow=3)) +
       #scale_y_log10() +
       ggtitle(plot_title) +
       xlab(xlabel) +
       ylab("Fluorescence (a.u.)") +
       theme_bw() +
       theme(panel.grid.minor = element_blank(),
-            legend.direction = "horizontal", legend.position = "bottom") +
+            legend.direction = "horizontal", legend.position = "bottom", 
+            axis.text.x = element_text(size=4)) +
       expand_limits(x=0.3)
     
     return(pretty_plot)
@@ -632,7 +634,7 @@ f_plot_sigmoid_d<-function(x_values_d, y_values, label_list){
     scale_x_log10() +
     ylab("D of Sigmoid Fit") +
     xlab("Dose") +
-    scale_color_manual(values = c("red","blue"))
+    scale_color_manual(values = colour_palette)
   
   return(pretty_plot)
 }
@@ -701,9 +703,10 @@ f_spearman_plot<-function(variance_list,label_list){
   
   final_plot<- ggplot() 
   
-  for(i in c(1:length(variance_list))){ #variance list calculated in the facs script. 
+  for(i in c(1:length(variance_list))){ #variance list calculated in the facs script.
+    print(label_list[[i]])
     single_layer<-
-      geom_point(aes(x=experiment_doses, y=variances[[i]], colour=label_list[[i]])) 
+      geom_point(aes_(x=experiment_doses, y=variances[[i]], colour=label_list[i])) 
     final_plot<-final_plot+single_layer
   }
   

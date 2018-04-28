@@ -1,21 +1,7 @@
 
 library(ggplot2)
 
-## colour scale
-plot_palette<-c(
-  "0"="#a2f1f6",
-  "1"="#80e8a1",
-  "3"="#76e170",
-  "5"="#94da61",
-  "10"="#b8d353",
-  "20"="#cdb745",
-  "30"="#c67b38",
-  "60"="#bf3b2c",
-  "100"="#b82149",
-  "400"="#b11679",
-  "1000"="#a90caa",
-  "3000"="#6703a3",
-  "no repressor"="orange")
+
 
 #-------------------------------------------------------------------------------------------
 
@@ -30,7 +16,7 @@ f_smooth<-function(descriptive_list,label_list,stat,legend_title,ncol_legend,sca
   for(i in c(1:length(descriptive_list))){
     single_layer<-geom_point(aes_(x=descriptive_list[[i]][,8],
                                   y=descriptives_to_use[[i]][,stat],
-                                  colour=label_list[i]),size=1)
+                                  colour=label_list[i]),size=3)
     final_plot<-final_plot+single_layer
   }
   
@@ -39,7 +25,7 @@ f_smooth<-function(descriptive_list,label_list,stat,legend_title,ncol_legend,sca
                                aes_(x=descriptive_list[[i]][,8],
                                     y=descriptive_list[[i]][,stat],
                                     colour=label_list[i]),
-                               se=FALSE,size=1)
+                               se=FALSE,size=1.5)
     final_plot<-final_plot+smooth_layer
   }
   
@@ -90,9 +76,7 @@ f_sizeplots_grid<- function(plot_list,name,legend_label,labels_for_grid){
   cowplot::plot_grid(plot_list[[string_match[1]]] + 
                        ggtitle(legend_label[[strain_label[1]]])+
                        theme(title = element_text(size = 8)),
-                     plot_list[[string_match[2]]],
-                     plot_list[[string_match[3]]],
-                     plot_list[[string_match[4]]],
+                     #plot_list[[string_match[4]]],
                      labels = labels_for_grid)
 }
 
@@ -101,12 +85,12 @@ f_sizeplots_grid<- function(plot_list,name,legend_label,labels_for_grid){
 
 ## histograms
 
-f_geom_histogram <- function(dataframe, dose_column, citrine_column, labels_histogram, 
+f_geom_histogram <- function(dataframe,control_sequence, dose_column, citrine_column, labels_histogram, 
                              doses_histogram,size,breaks,legend_title,legend_ncol,
-                             legend_position,xlimits) {
+                             legend_position,xlimits,ylimits,control_list, labels_controls) {
   
   dataframe<-as.data.frame(dataframe)
-  
+
   final_plot<-ggplot()
   
   for(i in doses_histogram) {
@@ -118,7 +102,20 @@ f_geom_histogram <- function(dataframe, dose_column, citrine_column, labels_hist
     
   }
   
+  
+  for(i in control_sequence) {
+    control<-as.data.frame(control_list[i])
+    single_layer<- geom_density(
+      aes_(x=control[,citrine_column],
+           colour=labels_controls[i]),size=size) 
+    
+    final_plot<- final_plot + single_layer
+    
+  }
+  
+  
   pretty_plot <- final_plot + 
+  
     theme_bw() +
     scale_colour_manual(values = plot_palette,
       breaks = breaks) +
@@ -130,6 +127,7 @@ f_geom_histogram <- function(dataframe, dose_column, citrine_column, labels_hist
           legend.background = element_blank(),
           plot.title = element_text(size=8,face="bold")) +
     xlim(xlimits) +
+    ylim(ylimits) +
     xlab("Fluorescence") +
     ylab("Count")
   
@@ -142,14 +140,13 @@ f_geom_histogram <- function(dataframe, dose_column, citrine_column, labels_hist
 # histogram grids
 
 f_histogram_grid<- function(plot_list,name,legend_label,grid_labels){
+  
   string_match<-(grep(name,names(plot_list),value = FALSE))
   strain_label<-grep(name,names(legend_label),value = FALSE)
+ 
   cowplot::plot_grid(plot_list[[string_match[1]]] + 
-                       ggtitle(legend_label[[strain_label[1]]])+
+                       ggtitle(legend_label[[strain_label[1]]]) +
                        theme(title = element_text(size=6)),
-                     plot_list[[string_match[2]]] + theme(legend.position = "none"),
-                     plot_list[[string_match[3]]] + theme(legend.position = "none"),
-                     plot_list[[string_match[4]]] + theme(legend.position = "none"),
                      labels = grid_labels)
 }
 
@@ -197,6 +194,43 @@ f_histogram_comparison<-function(title,
   return(pretty_plot)
 }
 
+
+## control histograms
+
+f_histogram_comparison_controls<-function(control_list, sequence,
+                                          column_to_plot, label_list,size_value,
+                                          guide_title,ncol_legend,legend_position,title,
+                                          xlimits_controls,ylimits_controls, mypalette){
+  
+  
+  final_plot<-ggplot()
+  for(i in c(sequence)){
+    frame<-as.data.frame(control_list[[i]])
+    single_layer<-
+      geom_density(aes_(x=frame[,column_to_plot],
+                        colour=(label_list[i])),size=size_value)
+    final_plot<-final_plot + single_layer
+  }
+  
+  
+  pretty_plot<-final_plot +
+    theme_bw() +
+    guides(colour=guide_legend(title=guide_title, ncol=ncol_legend)) +
+    theme(legend.position = legend_position, 
+          legend.background = element_blank(), 
+          legend.title = element_text(size=14), 
+          legend.text = element_text(size=12), 
+          legend.key.size = unit(0.5, "cm"), 
+          plot.title = element_text(size=12, face="bold"))+
+    scale_colour_manual(values = mypalette) +
+    ggtitle(paste(title)) +
+    ylim(ylimits_controls) +
+    xlim(xlimits_controls) +
+    xlab("Fluorescence (a.u.)") 
+  
+  
+  return(pretty_plot)
+}
 #----------------------------------------------------------------------------------------
 
 ## descriptive plots
@@ -205,17 +239,22 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
                          colour_labels,scale_x_breaks,xlab_title,ylab_title,
                          legend_title){
   
+ 
   frame <- (grep(name, names(data_list), value= FALSE))
   
   plot<-ggplot() +
     geom_point(aes(x=data_list[[frame[1]]][,dose_column],
-                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]])) +
+                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]]),
+               size=size_value_descriptives) +
     geom_point(aes(x=data_list[[frame[2]]][,dose_column],
-                   y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]])) +
+                   y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]]),
+               size=size_value_descriptives) +
     geom_point(aes(x=data_list[[frame[3]]][,dose_column],
-                   y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]])) +
-    geom_point(aes(x=data_list[[frame[4]]][,dose_column],
-                   y=data_list[[frame[4]]][,stat_column], colour=colour_labels[[4]])) +
+                   y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]]),
+               size=size_value_descriptives) +
+    # geom_point(aes(x=data_list[[frame[4]]][,dose_column],
+    #                y=data_list[[frame[4]]][,stat_column], colour=colour_labels[[4]]),
+    #            size=size_value_descriptives) +
     scale_colour_manual(values = palette) +
     theme_bw() +
     theme(panel.grid = element_blank(), axis.text = element_text(size = 8),
@@ -232,10 +271,11 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
 
 # grids
 f_descriptive_grid<- function(plot_list,name,legend_label,grid_labels){
+ 
   string_match<-(grep(name,names(plot_list),value = FALSE))
   strain_label<-grep(name,names(legend_label),value = FALSE)
-  cowplot::plot_grid(plot_list[[string_match[1]]] + 
-                       ggtitle(legend_label[[strain_label[1]]])+
+  cowplot::plot_grid(plot_list[[string_match[1]]] +
+                       ggtitle(legend_label[[strain_label[1]]]) +
                        theme(title = element_text(size=6)),
                      plot_list[[string_match[2]]] + theme(legend.position = "none"),
                      labels = grid_labels, nrow=2)
@@ -246,6 +286,7 @@ f_descriptive_plotting<-function(){
   all_plots_2<-list()
   
   for(i in stat_columns_1){
+    
     plot_list<-lapply(strain_names,f_point_plots,
                       data_list = descriptives, dose_column = 8, stat_column = i,
                       palette=palette,colour_labels=colour_labels,scale_x_breaks=scale_x_breaks,
@@ -366,54 +407,19 @@ f_size_vs_fluorescence_comp<-function(sequence,title,df_list,size_column,size_va
 
 ##boxplots for comparison
 
-f_stat_summary<-function(dataframe){
-  labels<-unique(dataframe$L1)
-  frame<-t(as.data.frame(c(1,1,1)))
-  
-  for(i in labels){
-    data<-dataframe[which(dataframe$L1==i),2]
-    median<-median(data)
-    quantile_1<-quantile(data,0.25)
-    quantile_3<-quantile(data,0.75)
-    row<-cbind(median,quantile_1,quantile_3)
-    rownames(row)<-i
-    frame<-rbind(frame,row)
-  }
-  
-  frame<-as.data.frame(frame[-1,])
-  frame[,4]<-rownames(frame)
-  colnames(frame)<-c("median","Q1","Q3","label")
-  
-  return(frame)
-}
-
-f_boxplot<-function(frames,ylimits, width){
-  summary_stats<-f_stat_summary(frames)
-  
+f_boxplot<-function(frames,ylimits){
   plot<-ggplot(frames) +
-    geom_violin(aes(x=L1,y=value),scale="width", width=width,
-                size=2) +
-    
-    geom_errorbar(data=summary_stats,aes(x=label, ymin=Q1, ymax=Q3),
-                 width=0.2, size=1.5) +
-    geom_point(data=summary_stats,aes(x=label,y=median), size=5) +
-    
+    geom_boxplot(aes(x=reorder(L1,value,FUN="median"),y=value))+
     coord_flip() +
     ylim(ylimits) +
     theme_bw() +
-    # theme(panel.background = element_blank(),
-    #       panel.grid = element_blank(),
-    #       panel.border = element_blank(),
-    #       axis.line = element_line(colour="black"),
-    #       axis.text = element_text(size=28, face="bold"),
-    #       axis.title = element_text(size=28, face="bold"),
-    #       axis.line.x = element_line(size=1),
-    #       axis.line.y = element_blank(),
-    #       axis.text.y = element_blank(), 
-    #       aspect.ratio = 1,
-    #       axis.ticks.y = element_blank()
-          
-    
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          panel.border = element_blank(),
+          axis.line = element_line(colour="black"),
+          axis.text = element_text(size=14),
+          axis.title = element_text(size=14)
+    )+
     ylab("Fluorescence (a.u.)") +
     xlab("")
   return(plot)
@@ -421,10 +427,179 @@ f_boxplot<-function(frames,ylimits, width){
 }
 
 
-ggplot() +
-  geom_violin(aes(x=1,y=c(1:10))) +
-  stat_summary(geom="errorbar",aes(x=1,y=c(1:10)), ymin=1,ymax=10,
-               fun.y="median",
-               fun.ymin="quantile",
-               fun.ymax="quantile",
-               fun.args = list(probs = c(0.25,0.75)))
+#----------------------------------------------------------------------------------------
+
+## sigmoid curve fitting
+
+## plotting
+
+function_curve_fitting<-
+  # this function fits a sigmoid curve to the datapoints. 
+  # a is the upper asymptote, b is the steepest slope, c is the x axis value at b, d is the lower 
+  # asymptote. you can define these individually for every curve.
+  # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
+  # the function creates a list of fitted values, one for each "frame" input. 
+  function(frame,list_of_starting_points){
+    
+    
+    x = frame[,8]
+    y = frame[,1]
+    
+    a<-list_of_starting_points[[1]]
+    b<-list_of_starting_points[[2]]
+    c<-list_of_starting_points[[3]]
+    d<-list_of_starting_points[[4]]
+    e<-list_of_starting_points[[5]]
+    # fitting
+    fitmodel <- nlsLM(y ~  ( e+ (a-e)/((1 + ((x/c)^b))^(d))), start=list(a=a,b=b,c=c, d=d,e=e), 
+                      weights = (1/(frame[,5])), control = list(maxiter=1000))
+    
+    
+    
+    # get the coefficients 
+    params=coef(fitmodel)
+    return(params)
+    
+  }
+
+
+f_ecs<-function(params){
+  # calculate ec50, ec90 and ec10
+  ec50<-params[3]*(((2^(1/params[4]))-1))^(1/params[2])
+  ec90<-params[3]*((((100/90)^(1/params[4]))-1))^(1/params[2])
+  ec10<-params[3]*((((10)^(1/params[4]))-1))^(1/params[2])
+  
+  ec_list<-c(ec10,ec50,ec90)
+  print(ec_list)
+  return(ec_list)
+}
+
+
+f_sigmoid <- function(params, x) {
+  ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
+                                            (params[4]))))
+}
+
+f_sigmoid_fit<-function(params,x_values){    
+  sigmoid_fit <- f_sigmoid(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
+
+
+#----------------------------------------------------------------------------------------
+
+## QQplots
+
+f_qqplot<-function(dataframe1, dataframe2,column1,column2, xlims, ylims, title, label_1, 
+                   label_2){
+plot_values<-as.data.frame(qqplot(x=dataframe1[,column1], 
+                                  y=dataframe2[,column2], plot.it=FALSE))
+
+qqplot<-ggplot(plot_values) +
+  geom_point(aes(x=x,y=y)) +
+  xlab(colnames(dataframe1)[column1]) +
+  ylab(colnames(dataframe1)[column2]) +
+  geom_abline(aes(slope=1,intercept=0)) +
+  
+  theme_bw() +
+  xlim(xlims) +
+  ylim(ylims) +
+  ggtitle(title)
+
+return(qqplot)
+
+}
+
+#----------------------------------------------------------------------------------------
+f_spearman_plot<-function(variance_list,label_list){
+  
+  final_plot<- ggplot() 
+  
+  for(i in c(1:length(variance_list))){ #variance list calculated in the facs script.
+    print(label_list[[i]])
+    single_layer<-
+      geom_point(aes_(x=experiment_doses, y=variances[[i]], colour=label_list[i])) 
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    scale_x_log10() +
+    ylab("Spearman Correlation") +
+    xlab("[aTc] (ng/mL)")
+  
+}
+
+#----------------------------------------------------------------------------------------
+## geom_flat_violin function taken frmo the internet for plotting split violin plots. 
+library(ggplot2)
+library(dplyr)
+
+
+"%||%" <- function(a, b) {
+  if (!is.null(a)) a else b
+}
+
+geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
+                             position = "dodge", trim = TRUE, scale = "area",
+                             show.legend = NA, inherit.aes = TRUE, ...) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = stat,
+    geom = GeomFlatViolin,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      trim = trim,
+      scale = scale,
+      ...
+    )
+  )
+}
+
+#' @rdname ggplot2-ggproto
+#' @format NULL
+#' @usage NULL
+#' @export
+GeomFlatViolin <-
+  ggproto("GeomFlatViolin", Geom,
+          setup_data = function(data, params) {
+            data$width <- data$width %||%
+              params$width %||% (resolution(data$x, FALSE) * 0.9)
+            
+            # ymin, ymax, xmin, and xmax define the bounding rectangle for each group
+            data %>%
+              group_by(group) %>%
+              mutate(ymin = min(y),
+                     ymax = max(y),
+                     xmin = x,
+                     xmax = x + width / 2)
+            
+          },
+          
+          draw_group = function(data, panel_scales, coord) {
+            # Find the points for the line to go all the way around
+            data <- transform(data, xminv = x,
+                              xmaxv = x + violinwidth * (xmax - x))
+            
+            # Make sure it's sorted properly to draw the outline
+            newdata <- rbind(plyr::arrange(transform(data, x = xminv), y),
+                             plyr::arrange(transform(data, x = xmaxv), -y))
+            
+            # Close the polygon: set first and last point the same
+            # Needed for coord_polar and such
+            newdata <- rbind(newdata, newdata[1,])
+            
+            ggplot2:::ggname("geom_flat_violin", GeomPolygon$draw_panel(newdata, panel_scales, coord))
+          },
+          
+          draw_key = draw_key_polygon,
+          
+          default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = 0.5,
+                            alpha = NA, linetype = "solid"),
+          
+          required_aes = c("x", "y")
+  )

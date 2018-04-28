@@ -7,7 +7,7 @@ t1p1<-f_read(t1p1_file,pattern_read)
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
 df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,experiment_doses,columns_to_include),
-           f_df_list(t1p1,starting_well,2,c(0,200),columns_to_include))
+           f_df_list(t1p1,starting_well,2,c(0,600),columns_to_include))
 
 
 #----------------------------------------------------------------------------------
@@ -280,8 +280,9 @@ mapply(f_save,qqplots,names(qqplots),
 
 #-----------------------------------------------------------------------------------------------
  ## check for correlation between size and induction. 
-spearman_list<-df_with_size[[c(spearman_dfs)]]
+spearman_list<-df_with_size[spearman_dfs]
 
+variances<-vector("list",length(spearman_list))
 variances<-vector("list",length(spearman_list))
 
 for(k in c(1:length(spearman_list))){

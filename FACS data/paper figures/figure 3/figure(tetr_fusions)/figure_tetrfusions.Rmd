@@ -13,7 +13,7 @@ t0p1_file<-"180125_5op_tetrfusion/p1"
 pattern_read<-"Specimen_001"
 
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/tetrfusions"
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/figure3"
 # create folders named size, svf, histograms, boxplots under this directory. 
 
 columns<-c(3,6,7) # usually fsc-h, ssc-h, and 488C-h
@@ -98,7 +98,7 @@ mypalette<-c("#ffb419","#5e52e6","#a8d551","#8e00ab","#006512","#d038cc","#917f0
 #9e5b58)
 
 ### boxplots
-ylimits_box<-list(c(0,6000)
+ylimits_box<-list(c(0,4000)
                   )
 
 widths<-list(0.8)
@@ -131,6 +131,7 @@ boxplot_frames<-lapply(list_of_sequences,f_melt, df_list, label_list,"488 [C]-H"
 
 boxplots<-mapply(f_boxplot, boxplot_frames, ylimits_box, widths, SIMPLIFY = FALSE) # create boxplots
 names(boxplots)<-title_of_sequences
+boxplots
 
 # then save
 mapply(f_save,boxplots,names(boxplots),
