@@ -94,10 +94,11 @@ f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_ss
 
 f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
-  ggsave(paste(plot_name,".jpeg",sep=""),plot,path=output_folder, height=height,
+  ggsave(paste(plot_name,".pdf",sep=""),plot,path=output_folder, height=height,
          width=width, units = "cm")
   
 }
+
 
 ## saving tables
 
@@ -128,3 +129,4 @@ f_melt<-function(sequence,df_list,label_list, subset_criterion){
 }
 
 #-----------------------------------------------------------------------------------
+

@@ -1,0 +1,131 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r read flowSets}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+t0p1_file<-"180427_opmod/p1"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/april18/180427_opmod"
+# create folders named size, svf, histograms, boxplots under this directory. 
+
+columns<-c(2,5,7) # usually fsc-h, ssc-h, and 488C-h
+fsch_column<-1 # the index in "columns"
+ssch_column<-2 # the index in "columns"
+size_subset<-TRUE # set to true to subset based on fsch/ssch
+fsc_h_lower_limit<-25000
+fsc_h_upper_limit<-300000
+ssc_h_lower_limit<-0
+ssc_h_upper_limit<-200000
+
+
+## naming & labels
+
+strain_names<-c("2659","2660","2661","2683","70","2598","2599","2601","2602","2603","2551","2564",
+                "2565","2566","2569","2567","2568","2570","2571"				
+										
+	)
+
+label_list<-c(
+"5op optimized", #1 
+"5op optimized+RAP1", #2
+"5op optimized+RAP1+GCR1", #3 
+
+"pTDH3 (new)", #4 
+"fry70", #5
+
+"4op, RAP1+A", #6
+"4op, GCR1+G upstream", #7
+"4op, GCR1 full downstream", #8
+"4op,  TATAAAGA", #9 
+"4op, TATAAATA", #10
+
+"2op", #11
+"3op", #12
+"4op", #13
+"5op", #14
+"pTDH3 (old)", #15 
+"pAct1", #16 
+"pCyc1", #17 
+"pTEF2", #18 
+"pADH1" #19 
+
+
+)
+
+## which strains to compare:
+list_of_sequences<-list(
+  c(1,2,3,4,14,15),
+  c(6:10,13),
+  c(11:14,4,15),
+  c(3,4,15:19)
+)
+
+title_of_sequences<-c("multiplication",
+                      "4op series",
+                      "op placement",
+                      "promoter comparison"
+                      )
+
+
+
+mypalette<-c("#ffb419","#5e52e6","#a8d551","#8e00ab","#006512","#d038cc","#917f00","#ff6fe4","#144c21",
+             "#c10094","#4fdbcb","#ff4385","#009074","#c0004d","#00b9da","#b54700","#006dcb","#ff6a61",
+             "#00939a","#9f0022","#017ab5","#762700","#b5a6ff","#4d5100","#f599ff","#d6c688","#582b80",
+             "#ff91b8")
+#781e41
+#9e5b58)
+
+### boxplots
+ylimits_box<-list(c(0,100000),
+                  c(0,100000),
+                  c(0,100000),
+                  c(0,100000)
+                  # c(0,80000),
+                  # c(0,10000)
+                  )
+
+widths<-list(0.8,0.8,0.8,0.8,0.8,0.8)
+height_box<-6.3 # saving dimensions
+width_box<-9.5
+
+ 
+```
+
+```{r}
+
+
+## read fcs files as a flowset
+t0p1<-f_read(t0p1_file,pattern_read)
+
+#-----------------------------------------------------------------------------------------------
+
+## create the dataframe list
+df_list<-f_df_comparison(t0p1,columns,fsch_column, ssch_column, fsc_h_lower_limit,
+                fsc_h_upper_limit,ssc_h_lower_limit, ssc_h_upper_limit)
+
+names(df_list)<-strain_names
+
+#-----------------------------------------------------------------------------------------------
+## boxplots
+
+#first melt dataframes you want to put on the plot into one dataframe
+
+boxplot_frames<-lapply(list_of_sequences,f_melt, df_list, label_list,"488 [C]-H" )
+
+boxplots<-mapply(f_boxplot, boxplot_frames, ylimits_box, widths, SIMPLIFY = FALSE) # create boxplots
+names(boxplots)<-title_of_sequences
+
+# then save
+mapply(f_save,boxplots,names(boxplots),
+       MoreArgs = list(output_folder=output_path,height=height_box,
+                       width=width_box),SIMPLIFY = FALSE)
+```
+

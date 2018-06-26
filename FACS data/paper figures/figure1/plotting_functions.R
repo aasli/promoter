@@ -434,22 +434,24 @@ f_boxplot<-function(frames,ylimits){
 ## plotting
 
 function_curve_fitting<-
-  # this function fits a sigmoid curve to the datapoints. 
-  # a is the upper asymptote, b is the steepest slope, c is the x axis value at b, d is the lower 
-  # asymptote. you can define these individually for every curve.
-  # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
-  # the function creates a list of fitted values, one for each "frame" input. 
-  function(frame,list_of_starting_points){
+  # this function fits a sigmoid curve to the datapoints, using a 5 parameter logistic function. 
+  # the input is a dataframe, which should include the datapoints in one column, and the doses in 
+  # the other. There should also be a list of starting points, which includes one starting point
+  # per parameter to give the poor algorithm somewhere to start. These you have to find by trial 
+  # and error. 
+  # the function finds the best fit and returns the 5 parameters giving this best fit. 
+  function(frame,list_of_starting_points, dose_column, median_column){
     
     
-    x = frame[,8]
-    y = frame[,1]
+    x = frame[,dose_column]
+    y = frame[,median_column]
     
     a<-list_of_starting_points[[1]]
     b<-list_of_starting_points[[2]]
     c<-list_of_starting_points[[3]]
     d<-list_of_starting_points[[4]]
     e<-list_of_starting_points[[5]]
+    
     # fitting
     fitmodel <- nlsLM(y ~  ( e+ (a-e)/((1 + ((x/c)^b))^(d))), start=list(a=a,b=b,c=c, d=d,e=e), 
                       weights = (1/(frame[,5])), control = list(maxiter=1000))
@@ -476,11 +478,14 @@ f_ecs<-function(params){
 
 
 f_sigmoid <- function(params, x) {
+  
   ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
                                             (params[4]))))
 }
 
-f_sigmoid_fit<-function(params,x_values){    
+f_sigmoid_fit<-function(params,x_values){ 
+  # takes the parameters for the best fit, any number of x values, and returns a list of y values
+  # for plotting. 
   sigmoid_fit <- f_sigmoid(params,x_values)
   print(params)
   return(sigmoid_fit)

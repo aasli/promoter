@@ -99,6 +99,13 @@ f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
 }
 
+f_save_pdf<-function(plot,plot_name,output_folder,output_path, height,width){
+  
+  ggsave(paste(plot_name,".pdf",sep=""),plot,path=output_folder, height=height,
+         width=width,units="cm")
+  
+}
+
 ## saving tables
 
 f_save_table<-function(dataframe,file_name){

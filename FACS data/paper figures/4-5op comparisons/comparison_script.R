@@ -14,7 +14,7 @@ names(df_list)<-strain_names
 #----------------------------------------------------------------------------------
 
 # descriptive stats
-
+cols_descriptives<-3
 descriptives<-lapply(df_list,f_descriptives_comp,column=cols_descriptives)
 names(descriptives)<-label_list
 

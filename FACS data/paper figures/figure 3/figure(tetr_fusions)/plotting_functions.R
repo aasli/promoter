@@ -388,7 +388,10 @@ f_stat_summary<-function(dataframe){
 }
 
 f_boxplot<-function(frames,ylimits, width){
+  formatter<-function(y){y/1000}
+  
   summary_stats<-f_stat_summary(frames)
+  print(summary_stats)
   
   plot<-ggplot(frames) +
     geom_violin(aes(x=reorder(L1,value, FUN="median"),y=value),scale="width", width=width) +
@@ -398,22 +401,24 @@ f_boxplot<-function(frames,ylimits, width){
     geom_point(data=summary_stats,aes(x=label,y=median)) +
     
     coord_flip() +
-    ylim(ylimits) +
+    scale_y_continuous(breaks = waiver(), labels = formatter,limits = ylimits)+
     theme_bw() +
     theme(panel.background = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(colour="black"),
-          axis.text.x = element_text(face="bold"),
-          axis.title = element_text(face="bold"),
+          #axis.text.x = element_text(size=8),
+          axis.text.y= element_blank(),
+          #axis.title = element_text(face="bold"),
           axis.line.x = element_line(),
-          axis.line.y = element_blank(),
+          axis.line.y = element_line(),
           #axis.text.y = element_blank(),
           aspect.ratio = 1,
           axis.ticks.y = element_blank())+
+          #axis.title.x = element_text(size=8))+
 
     
-    ylab("Fluorescence (a.u.)") +
+    ylab(expression(paste("Fluorescence x","10"^"3", " (a.u.)", sep = ""))) +
     xlab("")
   return(plot)
   

@@ -46,7 +46,6 @@ size_subset_df<-lapply(df_list,f_size_subset,columns=columns,
 
 df_list<-size_subset_df
 }
-
 #----------------------------------------------------------------------------------
 
 # descriptive stats

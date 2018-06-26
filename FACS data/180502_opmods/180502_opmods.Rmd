@@ -1,0 +1,155 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r read flowSets}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+t0p1_file<-"180502_smalldose/opmod"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/may18/180502_opmod"
+# create folders named size, svf, histograms, boxplots under this directory. 
+
+columns<-c(2,5,7) # usually fsc-h, ssc-h, and 488C-h
+fsch_column<-1 # the index in "columns"
+ssch_column<-2 # the index in "columns"
+size_subset<-FALSE # set to true to subset based on fsch/ssch
+fsc_h_lower_limit<-48000
+fsc_h_upper_limit<-50000
+ssc_h_lower_limit<-25000
+ssc_h_upper_limit<-32000
+
+
+## naming & labels
+
+strain_names<-c(	"2569","2661","2659","2660","2566","2683"
+	
+										
+	)
+
+label_list<-c(
+"pTDH3 old", #1 
+"5op optimized+RAP1+GCR1", #2
+"5op optimized", #3 
+"5op optimized+RAP1", #4
+"5op", #5
+"pTDH3 new" #6
+
+
+)
+
+## which strains to compare:
+list_of_sequences<-list(
+  c(1:6)
+)
+
+title_of_sequences<-c("multiplication series"
+                      )
+
+
+
+mypalette<-c("#ffb419","#5e52e6","#a8d551","#8e00ab","#006512","#d038cc","#917f00","#ff6fe4","#144c21",
+             "#c10094","#4fdbcb","#ff4385","#009074","#c0004d","#00b9da","#b54700","#006dcb","#ff6a61",
+             "#00939a","#9f0022","#017ab5","#762700","#b5a6ff","#4d5100","#f599ff","#d6c688","#582b80",
+             "#ff91b8")
+#781e41
+#9e5b58)
+
+### boxplots
+ylimits_box<-list(c(0,100000)
+                  )
+
+widths<-list(0.8,0.8,0.8,0.8,0.8,0.8)
+height_box<-6.3 # saving dimensions
+width_box<-9.5
+
+ 
+```
+
+```{r}
+
+
+## read fcs files as a flowset
+t0p1<-f_read(t0p1_file,pattern_read)
+
+#-----------------------------------------------------------------------------------------------
+
+## create the dataframe list
+df_list<-f_df_comparison(t0p1,columns,fsch_column, ssch_column, fsc_h_lower_limit,
+                fsc_h_upper_limit,ssc_h_lower_limit, ssc_h_upper_limit)
+
+names(df_list)<-strain_names
+
+#-----------------------------------------------------------------------------------------------
+## boxplots
+
+#first melt dataframes you want to put on the plot into one dataframe
+
+boxplot_frames<-lapply(list_of_sequences,f_melt, df_list, label_list,"488 [C]-H" )
+
+boxplots<-mapply(f_boxplot, boxplot_frames, ylimits_box, widths, SIMPLIFY = FALSE) # create boxplots
+names(boxplots)<-title_of_sequences
+boxplots
+
+# then save
+# mapply(f_save,boxplots,names(boxplots),
+#        MoreArgs = list(output_folder=output_path,height=height_box,
+#                        width=width_box),SIMPLIFY = FALSE)
+
+
+hist<-ggplot() +
+  
+  geom_density(aes(x=df_list[[1]][,3],colour=label_list[[1]])) +
+  geom_density(aes(x=df_list[[2]][,3],colour=label_list[[2]])) +
+  geom_density(aes(x=df_list[[3]][,3],colour=label_list[[3]])) +
+  geom_density(aes(x=df_list[[4]][,3],colour=label_list[[4]])) +
+  geom_density(aes(x=df_list[[5]][,3],colour=label_list[[5]])) +
+  geom_density(aes(x=df_list[[6]][,3],colour=label_list[[6]])) +
+  
+  theme_bw() +
+  
+  xlim(0,150000) 
+
+f_save(hist,"histogram.jpeg",output_path,"",10,15)
+  
+```
+
+```{r}
+
+df_list_s<-list()
+df_list_b<-list()
+for(i in c(1:length(df_list))){
+  
+  df_list_s[[i]]<-subset(df_list[[i]],df_list[[i]][,1]<75000)
+  df_list_b[[i]]<-subset(df_list[[i]],df_list[[i]][,1]>75000)
+}
+
+f_hist_comp<-function(dataframe1,dataframe2,label,strain_name){
+  
+  plot1<-ggplot() +
+    geom_density(aes(x=dataframe1[,3],colour=paste(label,"small"))) +
+    geom_density(aes(x=dataframe2[,3],colour=paste(label,"big"))) +
+    ggtitle(strain_name) +
+    theme_bw()
+  
+  # plot2<-ggplot() +
+  #   geom_density(aes(x=dataframe2[,3],colour=label)) +
+  #   ggtitle("small") +
+  #   theme_bw()
+  
+  
+  return(plot1)
+  
+}
+
+big_smalls<-mapply(f_hist_comp,df_list_s,df_list_b,label_list, strain_names, SIMPLIFY = F)
+
+mapply(f_save,big_smalls,paste(strain_names,".jpeg",sep=""), output_path, "",10,15)
+```
+

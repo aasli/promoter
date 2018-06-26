@@ -13,43 +13,10 @@ source("plotting_functions.R")
 
 experiment_strains<- c(1,2,3) #the ones that you want to plot for every dose, so all except controls
 
-## colour scale
-## colour scale
-plot_palette<-c(
-"0"="#867236",
-"0.2"="#ccccb0",
-"0.5"="#6343c6",
-"1"="#addf42",
-"1.5"="#bf4dd6",
-"2"="#63d654",
-"2.5"="#d148a3",
-"3"="#d7ca3b",
-"4"="#6e74cc",
-"5"="#5c8f38",
-"6"="#77397a",
-"7"="#74dc9e",
-"8"="#cf466b",
-"9"="#76d5d7",
-"10"="#de4e34",
-"12"="#8cadd1",
-"15"="#d6913d",
-"18"="#4b5e7d",
-"25"="#cad17b",
-"35"="#d292c6",
-"60"="#435738",
-"100"="#98432a",
-"200"="#5b957b",
-"400"="#7c4a51",
-
-"fry70"="black",
-"no repressor"="black",
-"tdh3"="blue")
-
-
 
 # reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
-t0p1_file<-"180404_tup1doseR/p1"
-t1p1_file<-"180404_tup1doseR/p1/controls"
+t0p1_file<-"180427_tup1doseR/10h30min"
+t1p1_file<-"180427_tup1doseR/10h30min/controls"
 pattern_read<-"Specimen_001"
 
 
@@ -59,14 +26,14 @@ xlabel<-expression(paste("aTc[ng/mL]", sep = ""))
 starting_well<-1
 wells_per_sample<-24
 
-experiment_doses<- c(0,0.2,0.5,1,1.5,2,2.5,3,4,5,6,7,8,9,10,12,15,18,25,35,60,100,200,400)
+experiment_doses<- c(0,0.5,1,3,5,8,12,15,17,21,23,25,30,35,40,50,60,75,100,150,200,300,400,600)
 
 
 columns_to_include<-c(2,5,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
 
 
 strain_names<-c("2669","2676","2717","2661","2683","70") 
-time_points<-c("6h")
+time_points<-c("10.5h")
 
 label_list<- c("7op, pAct1_TetR-TUP1",
                "7op, pVph11_TetR-TUP1",
@@ -84,9 +51,9 @@ names(label_list)<-strain_names
 columns <-c(1:4) #columns to be included in the subset
 col_fscw <- 1 #column of FSC-W/H
 col_sscw <- 2 #column of SSC-W/H
-limit_fscw <-80000 #the value for subsetting based on FSC-W/H
-limit_sscw <-80000 #the value for subsetting based on SSC-W/H
-lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+limit_fscw <-300000 #the value for subsetting based on FSC-W/H
+limit_sscw <-300000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-25000 #the value for subsetting based on FSC-W/H, lower limit
 lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
 
 size_subset<-TRUE # set to TRUE if you want to use size_subsetted data, otherwise false.
@@ -94,99 +61,10 @@ size_subset<-TRUE # set to TRUE if you want to use size_subsetted data, otherwis
 #---------------------------------------------------------------------------------------------------------------
 ## descriptive statistics
 
-dose_descriptives<-c(0,0.2,0.5,1,1.5,2,2.5,3,4,5,6,9,12,15,18,35,60,200)
+dose_descriptives<-experiment_doses
 cols_descriptives<-3
 
 
-#---------------------------------------------------------------------------------------------------------------
-## smoothed dose response curves of the strains you want
-
-descriptive_sequence<-experiment_strains #pick the strains at given timepoints
-label_list_smooth<-label_list[experiment_strains]
-timepoint_used<-1
-number_of_timepoints<-1
-ncol_legend_smooth<-2
-statistic_to_use<-2 #1 is median, 2 is mean
-scale_x_breaks_smooth<-experiment_doses
-scale_x_labels_smooth<-experiment_doses
-legend_title_smooth<-"Strain"
-plot_title_smooth<-"Dose Response Curves, 6h"
-xlab_smooth<-xlabel
-ylab_smooth<-"Fluorescence (a.u.)"
-legend_direction_smooth<-"vertical"
-legend_position_smooth<-c(0.8,0.2)
-additional_arguments_smooth<-NULL
-time_point_smooth<-"6h" # to be used in the filename when saving the plot.
-
-height_smooth<-10 # the height and width of the plot to be saved
-width_smooth<-15
-#---------------------------------------------------------------------------------------------------------------
-
-## size plots
-fscw_column_size<-1
-sscw_column_size<-2
-xlab_size<-"FSC-W"
-ylab_size<-"SSC-W"
-ylimits_size<-c(40000,NA)
-xlimits_size<-c(40000,NA)
-
-labels_for_grid_size<-time_points # labels for the plots in the 2x2 grid
-
-height_size<-10 # saving dimensions
-width_size<-15
-
-#---------------------------------------------------------------------------------------------------------------
-
-## histograms
-dfs_to_histogram<-experiment_strains
-doses_histogram<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
-
-labels_histogram<-c("0","0.2","0.5","1","1.5","2","2.5","3","4","5","6","7","8",
-                    "9","10","12","15","18","25","35","60","100","200","400",
-                    "fry70","tdh3","no repressor") 
-breaks_histogram<-labels_histogram
-
-dose_column<-4 #the column with doses 
-citrine_column<-3 # column with citrine measurement
-
-control_sequence<-c(3,4,5)
-control_labels<-c("no repressor","tdh3","fry70")
-
-size_histogram<- 1.3 # size of the lines
-legend_title_histogram<-xlabel
-legend_ncol_histogram<-2
-legend_position_histogram<-c(0.7,0.8)
-xlimits_histogram<-c(0,60000)
-ylimits_histogram<-c(0,0.0005)
-
-grid_labels_histograms<-time_points # labels for the plots in the 2x2 grid
-
-height_histograms<-10 # saving dimensions
-width_histograms<-15
-
-
-names_individual_histograms<-c("histogram_gridAct1.jpeg","histogram_gridVph1.jpeg",
-                               "histogram_gridRNR2.jpeg") # names for saving the plots
-x_limits_individual_histogram<-c(0,50000)
-x_breaks_individual_histogram<-c(0,9000,25000,50000)
-y_breaks_individual_histogram<-c(0,0.0001,0.0002)
-y_limits_individual_histogram<-c(0,0.0001)
-#---------------------------------------------------------------------------------------------------------------
-
-## descriptive plots
-palette<-c("6h"="purple")
-colour_labels<-time_points
-scale_x_breaks<-experiment_doses
-ylab_title<-"Fluorescence (a.u.)"
-xlab_title<-xlabel
-legend_title<-"Time Point"
-stat_columns_1<-c(1,6)
-stat_columns_2<-c(2,7)
-size_value_descriptives<-4
-height_descriptives<-10
-width_descriptives<-15
-
-#----------------------------------------------------------------------------------------------------------
 
 ## sigmoid fits
 descriptives_to_use_sigmoid<-experiment_strains
@@ -197,7 +75,7 @@ plot_title<-"Dose Response Curves, 24"
 xlabel<-expression(paste("aTc[ng/mL]"))
 
 # pick controls for the plot
-controls_to_use_sigmoid<-c(3,4,5)
+controls_to_use_sigmoid<-c(4,5,6)
 # define starting points for the fitting for each curve: c(a,b,c,d)
 # a is the upper asymptote, b is the steepest slope, c is the x axis value at b, e is the lower 
 # asymptote. you can define these individually for every curve. 
@@ -217,54 +95,9 @@ width_sigmoid<-15
 
 label_list_derivative<-c("pAct1","pVph1","pRNR2")
 #----------------------------------------------------------------------------------------------------------
-## size vs. induction plots
-
-palette_density<-plot_palette
-x_breaks_density<-labels_histogram
-legend_title_density<-xlabel
-ncol_legend_density<-2
-legend_position_density<-c(0.15,0.68)
-size_column<-5
-citrine_column<-3
-dose_column<-4
-
-doses_size_vs_induction<-experiment_doses # the doses you want to plot. if you change this, you should change the manual colour scale inside the function as well. 
-
-labels_size_vs_induction<-labels_histogram  #labels that will appear on the legend, and that determine the colour_scale_manual mappings. If you change anything here, change it in the colour scale inside the function as well. 
-
-grid_labels_density<-time_points
-
-height_density<-10
-width_density<-15
-
-#----------------------------------------------------------------------------------------------------------## QQPLOTS
-# in the dataframelist1/2, pick the strain you want to plot. in the doses part, you can specify which 
-# dose is to be plotted. in columns, pick which column is to be plotted. dataframelist1 and 2 will be paired in each qqplot (i.e. dataframelist1[1] is plotted against dataframelist2[[1]])
-dataframelist1<-c(1,1,1)
-dataframelist1_doses<-c(0,200,400)
-dataframelist1_columns<-c(3,3,3)
-dataframelist2<-c(2,2,2)
-dataframelist2_doses<-c(0,200,400)
-dataframelist2_columns<-c(3,3,3)
-
-xlims_qqplot<-list(c(0,NA),c(0,NA),c(0,NA))
-ylims_qqplot<-list(c(0,NA),c(0,NA),c(0,NA))
-
-titles_qqplot<-c("NF vs pAct1,0atc",
-          "NF vs pAct1,200atc",
-          "NF vs pAct1,400atc"
-          )
-
-width_qq<-15
-height_qq<-10
 
 ```
 
-
-```{r}
-source("facs_script.R")
-
-```
 
 
 ```{r plotting function}
@@ -272,7 +105,7 @@ source("facs_script.R")
 library("minpack.lm")
 library("ggthemes")
 ## plotting the sigmoid curves.
-xlabel<-expression(paste("aTc[ng/mL]"))
+xlabel<-expression(paste("aTc [ng/mL]"))
 
 f_plot_sigmoid_curves_single<-
   # plot the fitted line and the individual data points. 
@@ -284,8 +117,8 @@ f_plot_sigmoid_curves_single<-
     for (i in c(1:length(fit_list))){
       print(i)
       single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
-                                         colour=label_list_sigmoid[[i]], 
-                                         linetype=label_list_sigmoid[[i]]), size=1)
+                                         colour=label_list_sigmoid[[i]]), 
+                                         size=1)
       final_plot<-final_plot+single_layer_line
     }
     
@@ -301,9 +134,9 @@ f_plot_sigmoid_curves_single<-
     
     for(k in c(1:length(control_frame_list))){
       frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
-  print(frame[,1])
+      
       single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
-                                             linetype=label_list_control[[k]]), colour="black")
+                                             linetype=label_list_control[[k]]), colour="black", show.legend = F)
       
       ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
                                               ymax=frame[,1]-(frame[,6]*frame[,1]),
@@ -364,20 +197,25 @@ f_plot_sigmoid_curves_single<-
                                     "pAct1"=16,
                                     "pVph1"=17,
                                     "prnr2"=15)) +
-      scale_colour_manual(values = c("pAct1"="darkblue",
-                                     "pVph1"="blue",
-                                     "prnr2"="lightblue")) +
+      scale_colour_manual(values = c("pAct1"="grey50",
+                                     "pVph1"="grey30",
+                                     "prnr2"="grey10")) +
       scale_x_continuous(breaks = doses_experiment,
                     labels = labels_x_axis, 
                     limits = xlim,
                     trans = "log10") +
       scale_y_continuous(limits = ylim, labels=formatter) +
-      guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      guides(colour=guide_legend(title = "")) +
       # ggtitle(plot_title) +
       xlab(xlabel) +
       ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
       theme(panel.grid.minor = element_blank(),
-            legend.direction = "horizontal", legend.position = "none", 
+            legend.position = "none", 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"), 
             panel.border = element_blank(), 
              axis.line = element_line(),
             # axis.text = element_text(size=24),
@@ -398,13 +236,14 @@ f_plot_sigmoid_curves_single<-
 
 ```{r}
 descriptives_to_use<-c(1,2,3)
-control_descriptives_to_use<-c(4,5)
+control_descriptives_to_use<-c(4,6)
 labels_to_use<-c(1,2,3)
 dose_control<-"0"
-xlim<-c(0.1,400)
-ylim<-c(0,NA)
+xlim<-c(0.15,600)
+ylim<-c(0,40000)
 
-colour_palette<-c("lightblue","blue","darkblue","grey20","grey50","grey80")
+colour_palette<-c("grey50","grey30","grey10")
+  #c("lightblue","blue","darkblue","grey20","grey50","grey80")
 list_of_starting_points<-list(
   # c(30000,0.1,15,10,200),
   # c(30000,0.1,8,10,200),
@@ -427,13 +266,13 @@ control_frame_list<-descriptives[control_descriptives_to_use]
 
 
 #define x axis doses and the labels for plotting
-doses_experiment<-c(0.0001,1,1.5,2,3,4,6,9,15,35,200)
-labels_x_axis<- c("0","1","1.5","2","3","4","6","9","15","35","200")
+doses_experiment<-c(0.19,1,5,20,60,200,600)
+labels_x_axis<- c("0","1","5","20","60","200","600")
 
 
 # replace 0 values in the doses with 0.1
 for(i in c(1:length(frame_list))){
-  frame_list[[i]][1,8]<-0.0001
+  frame_list[[i]][1,8]<-0.19
 }
 
 # generate log distributed x values for smoother line fitting. 
@@ -456,7 +295,10 @@ sigmoid_plot<-f_plot_sigmoid_curves_single(fit,frame_list, control_frame_list,
 
 sigmoid_plot
 
-ggsave(sigmoid_plot, filename =  "tup1doseR_180215.jpeg", path=output_path, height=10, width=15, units = "cm")
+ggsave(sigmoid_plot, filename =  "tup1doseR_180427.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(sigmoid_plot, filename =  "tup1doseR.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+#demo(colors)
 ```
 
 ```{r boxplot}
@@ -489,8 +331,9 @@ ylimits_box<-list(c(0,1000)
                   )
 
 widths<-list(0.8)
-height_box<-10 # saving dimensions
-width_box<-15
+
+height_box<-6 # saving dimensions
+width_box<-9.04
 #-----------------------------------------------------------------------------------------------
 ## boxplots
 
@@ -506,6 +349,10 @@ names(boxplots)<-title_of_sequences
 
 # then save
 mapply(f_save,boxplots,names(boxplots),
+       MoreArgs = list(output_folder=output_path,output_path="",height=height_box,
+                       width=width_box),SIMPLIFY = FALSE)
+
+mapply(f_save_pdf,boxplots,names(boxplots),
        MoreArgs = list(output_folder=output_path,output_path="",height=height_box,
                        width=width_box),SIMPLIFY = FALSE)
 ```

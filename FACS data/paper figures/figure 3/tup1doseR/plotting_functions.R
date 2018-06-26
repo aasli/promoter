@@ -443,7 +443,7 @@ f_boxplot<-function(frames,ylimits, width){
   formatter<-function(x){x/1000}
   
   plot<-ggplot(frames) +
-    geom_violin(aes(x=L1,y=value),scale="width", width=width, size=1) +
+    geom_violin(aes(x=L1,y=value, colour=L1),scale="width", width=width, size=1) +
     
     geom_errorbar(data=summary_stats,aes(x=label, ymin=Q1, ymax=Q3),
                   width=0.2) +
@@ -452,17 +452,23 @@ f_boxplot<-function(frames,ylimits, width){
     coord_flip() +
     scale_y_continuous(limits = ylimits, labels = formatter) +
     theme_bw() +
+    scale_colour_manual(values = c("Afry70"="black",
+                                   "CpVph1"="grey30",
+                                   "Bprnr2"="grey10",
+                                   "DpAct1"="grey50"))+
     theme(panel.background = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line(colour="black"),
-          axis.text = element_text(face = "bold"),
+          #axis.text = element_text(face = "bold"),
+          axis.text.y = element_blank(),
           axis.title = element_text(),
-          axis.line.x = element_line(size = 0.7),
+          axis.line.x = element_line(),
           axis.line.y = element_blank(),
           #axis.text.y = element_blank(), 
-          aspect.ratio = 1,
-          axis.ticks.y = element_blank()
+          aspect.ratio = 0.70,
+          axis.ticks.y = element_blank(),
+          legend.position = "none"
           
     )+
     ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
