@@ -216,3 +216,39 @@ f_save_table(fold_change_table,"fold_change.csv")
 
 ```
 
+```{r 3op repression histograms}
+
+ur<-df_list[[3]] #unrepressed 3op
+r<-df_list[[5]] #repressed 3op
+
+formatter<-function(x){x*100000}
+
+
+ggplot() +
+  geom_density(aes(x=ur[,3], colour="unrepressed")) +
+  geom_density(aes(x=r[,3],colour="repressed")) +
+  theme(panel.grid.minor = element_blank(),
+            #legend.direction = "horizontal",
+            legend.position = c(0.8,0.6), 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) +
+  scale_x_continuous(limit=c(0,80000), breaks = seq(0, 80000, length.out = 5)) +
+  scale_y_continuous(limit=c(0,0.00005), breaks = seq(0,0.00005, length.out = 6), labels = formatter)+
+  ylab(expression(paste("Density x ","10" ^ "-5", sep=""))) +
+  xlab("Fluorescence (a.u.)")
+
+ggsave(path=output_path, filename = "sup_3op.pdf",height=6, width=9.04, units = "cm")
+ggsave(path=output_path, filename = "sup_3op.jpeg",height=6, width=9.04, units = "cm")
+
+```
+

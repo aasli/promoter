@@ -1,0 +1,593 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r set parameters}
+
+source("common_functions.R")
+source("stat_functions.R")
+
+# reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
+t0p1_file<-"180419_7opTDDR/t0"
+t0p2_file<-"180419_7opTDDR/t0/controls"
+
+t1p1_file<-"180419_7opTDDR/30min"
+t1p2_file<-"180419_7opTDDR/30min/controls"
+
+t2p1_file<-"180419_7opTDDR/60min"
+t2p2_file<-"180419_7opTDDR/60min/controls"
+
+t3p1_file<-"180419_7opTDDR/90min"
+t3p2_file<-"180419_7opTDDR/90min/controls"
+
+t4p1_file<-"180419_7opTDDR/120min"
+t4p2_file<-"180419_7opTDDR/120min/controls"
+
+t5p1_file<-"180419_7opTDDR/150min"
+t5p2_file<-"180419_7opTDDR/150min/controls"
+
+t6p1_file<-"180419_7opTDDR/180min"
+t6p2_file<-"180419_7opTDDR/180min/controls"
+
+t7p1_file<-"180419_7opTDDR/240min"
+t7p2_file<-"180419_7opTDDR/240min/controls"
+
+t8p1_file<-"180419_7opTDDR/300min"
+t8p2_file<-"180419_7opTDDR/300min/controls"
+
+t9p1_file<-"180419_7opTDDR/360min"
+t9p2_file<-"180419_7opTDDR/360min/controls"
+
+t10p1_file<-"180419_7opTDDR/420min"
+t10p2_file<-"180419_7opTDDR/420min/controls"
+
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/figure4/drm_package" # for saving plots
+xlabel<-expression(paste("aTc [ng/mL]", sep = "")) 
+
+starting_well<-1
+wells_per_sample<-24
+
+experiment_doses<- c(0,0.5,1,3,5,8,12,15,17,21,23,25,30,35,40,50,60,75,100,150,200,300,400,600)
+
+
+columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+strain_names<-c("2759","2661","2683","70") 
+time_points<-c("0min","30min","60min","90min","120min","150min","180min","240min","300min","360min","420min")
+
+label_list<- c("7op final, NF", 
+               "no repressor",
+               "pTDH3_citrine",
+               "fry70"
+               )
+
+names(label_list)<-strain_names
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+
+#---------------------------------------------------------------------------------------------------------------
+
+## sigmoid fits
+descriptives_to_use_sigmoid<-c(5,9,13,17,21,25,29,33,37,41)
+labels_to_use<-c(30,60,90,120,150,180,240,300,360,420)
+colour_palette<-c("red","blue", "orange","green","black") # define the colour palette for plotting
+# define the plot title, xlabel
+plot_title<-"Dose Response Curves, TDDR"
+xlabel<-expression(paste("aTc [ng/mL]"))
+
+# pick controls for the plot
+controls_to_use_sigmoid<-c(2,3,4)
+
+time_point_sigmoid<-"TDDR"
+height_sigmoid<-6
+width_sigmoid<-9.04
+
+## derivative of sigmoid fit
+
+label_list_derivative<-c(30,60,90,120,150,180,240,300,360,420)
+
+#----------------------------------------------------------------------------------------------------------
+
+```
+
+```{r sigmoid plot}
+## sigmoid curve fitting
+
+## plotting
+
+
+f_sigmoid <- function(params, x) {
+  
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  p1<-params[[5]]
+  p2<-params[[6]]
+  
+  (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic
+}
+
+
+f_sigmoid_fit<-function(params,x_values){  
+   print(params)
+  sigmoid_fit <- f_sigmoid(params,x_values)
+ 
+  return(sigmoid_fit)
+}
+
+
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_list,control_list_sigmoid, doses){
+   formatter<-function(x){x/1000}
+    
+    final_plot<-ggplot() 
+    
+    
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      print(label_list_sigmoid[[i]])
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # plot the zero timepoint
+    #descriptives[[1]][1,8]<-0.19
+    
+    final_plot<-
+      final_plot + 
+      geom_line(aes(x=descriptives[[1]][,8],y=descriptives[[1]][,1],colour=0), size=1) +
+      geom_point(aes(x=descriptives[[1]][,8],y=descriptives[[1]][,1],colour=0)) 
+    
+    # plot the control
+    
+    final_plot<-
+      final_plot +
+      geom_line(aes(x=c(experiment_doses),y=descriptives[[42]][24,1]), linetype="dotted") +
+      geom_line(aes(x=c(experiment_doses),y=descriptives[[43]][24,1]), linetype="dotdash") +
+      geom_line(aes(x=c(experiment_doses),y=descriptives[[44]][24,1]), linetype="longdash") 
+      
+    # # plot controls
+    # for (k in c(1:length(control_list))){
+    #   single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
+    #                                      y=control_list[[k]][,1][c(1,24)],
+    #                                        colour=control_list_sigmoid[[k]]))   
+    #   final_plot<-final_plot+single_layer_line
+    # }
+    
+   
+    
+    pretty_plot<-final_plot +
+      scale_colour_gradient(low=low_color,high=high_color, breaks=c(0,label_list_sigmoid)) +
+      scale_x_continuous(breaks = breaks_sigmoid,
+                    labels = labels_x_axis,
+                    #trans = "log10",
+                    limits=c(0,NA)) +
+      guides(colour=guide_legend(title = "Time (min)", nrow=2)) +
+      #scale_y_log10() +
+      #ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab("Fluorescence (a.u.)") +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+      theme(panel.grid = element_blank(),
+            legend.position = "top", 
+            legend.direction = "horizontal",
+            #legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.15,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) +
+     scale_y_continuous(limits = c(0,NA), labels=formatter)
+    
+    return(pretty_plot)
+  }
+
+
+
+
+```
+
+ 
+```{r derivative plot}
+## plot derivative of the sigmoid fit
+
+f_d_sigmoid <- function(params, x) {
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  p1<-params[[5]]
+  p2<-params[[6]]
+  
+  eval(D(body(f_fit_function),'x'))
+}
+
+
+f_d_sigmoid_fit<-function(params,x_values_d){    
+  sigmoid_fit <- f_d_sigmoid(params,x_values_d)
+  return(sigmoid_fit)
+}
+
+f_plot_sigmoid_d<-function(x_values_d, y_values, label_list,seq){
+  
+  final_plot<- ggplot() 
+  
+  for(i in seq){
+    single_layer<-geom_line(aes_(x=x_values_d,y=y_values[[i]], colour=label_list[[i]]))
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot +
+    geom_line(aes_(x=x_values_d,
+                   y=rep(0,length(x_values_d)), colour=0))+
+    theme(legend.position = c(0.8,0.8)) +
+    guides(colour=guide_legend(title = "Strain")) +
+    ylab("Slope") +
+    xlab(xlabel) +
+    ylim(NA,600)+
+    scale_colour_gradient(low=low_color,high=high_color) +
+    scale_x_continuous(breaks = c(0.19,1,5,20,100,600),
+                    labels = c(0,1,5,20,100,600), 
+                    trans = "log10", 
+                    limit=c(0.19,NA)) +
+      theme(panel.grid = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+  return(pretty_plot)
+}
+
+```
+
+
+```{r spearman plot}
+f_sigmoid_spearman <- function(params, x) {
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  f<-params[[5]]
+  a<-params[[6]]
+  
+  c + (d-c + f*exp(-1/(x^{a})))/(1+exp(b*(log(x)-log(e))))
+  
+}
+
+f_sigmoid_fit_spearman<-function(params,x_values){ 
+  # takes the parameters for the best fit, any number of x values, and returns a list of y values
+  # for plotting. 
+  sigmoid_fit <- f_sigmoid_spearman(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
+
+# plotting spearman correlation between size and fluorescence. 
+
+
+#########
+
+f_spearman_fit_plot<-function(fit,label,data){
+  
+  final_plot<-ggplot() +
+    geom_line(aes_(x=x_values_spearman,y=fit, colour=label)) +
+  
+    geom_point(aes_(x=data[,2], y=data[,1], colour=label)) +
+    
+    geom_line(aes_(x=c(0,x_values_spearman),y=variances_control[[1]][1]), linetype="dotted") +
+    
+    geom_line(aes_(x=c(0,x_values_spearman),y=variances_control[[3]][1]), linetype="dashed") 
+    
+    
+  
+  pretty_plot<- final_plot +
+     ylab("Spearman Correlation") +
+    scale_colour_manual(values = high_color) +
+    scale_linetype_manual(values=c("longdash", "dotdash")) +
+    xlab(xlabel) +
+    scale_x_continuous(breaks = c(0.19,1,5,20,100,600),
+                    labels =  c(0,1,5,20,100,600), 
+                    limits = xlim_spearman,
+                    trans = "log10") +
+    scale_y_continuous(limits=c(0.40,0.85), breaks = c(0.4,0.5,0.6,0.7,0.8,0.9)) +
+    theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1 ),
+            panel.background = element_blank()
+            ) 
+  
+  
+  return(pretty_plot)
+  
+}
+
+```
+
+
+
+
+```{r drc}
+
+library(drc)
+
+list_p1<-list(-0.8,-0.9,-0.8,-0.8,
+              -0.8,-0.8,-0.8,-0.8,
+              -0.8,-0.8)
+
+list_p2<-list(3,3,3,2.7,
+              3,3,3,3,3,3)
+
+
+list_formulas<-list()
+
+for(i in c(1:length(list_p1))){
+  formula<- fplogistic(p1=list_p1[[i]],p2=list_p2[[i]])
+  list_formulas[[i]]<-formula
+}
+
+f_fit_function<-function(x) (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic function
+
+
+#--------------------------------------------------------------------------------------
+high_color<-"darkblue"
+low_color<-"lightblue"
+library("minpack.lm")
+library(ggplot2)
+# pick which strains/time_points you want to plot, and their labels
+frame_list<-descriptives[descriptives_to_use_sigmoid]
+label_list_sigmoid<-labels_to_use
+
+
+# define the controls for putting on the plot
+control_list<-descriptives[controls_to_use_sigmoid]
+control_list_sigmoid<-label_list[controls_to_use_sigmoid]
+
+# replace 0 values in the doses with 0.1
+# for(i in c(1:length(frame_list))){
+#   frame_list[[i]][1,8]<-0.19
+# }
+
+# generate log distributed x values for smoother line fitting. 
+library(emdbook)
+x_values<-c(0,lseq(min(0.000001),
+               max(frame_list[[1]][,8]),1000))
+
+x_values_plotting<-c(min(frame_list[[1]][,8]),x_values[c(2:length(x_values))])
+
+
+#define x axis doses and the labels for plotting
+doses_experiment<-frame_list[[1]][,8]
+breaks_sigmoid<-c(0,100,200,400,600)
+labels_x_axis<-breaks_sigmoid
+
+
+new_frame_list<-list()
+
+for(i in c(1:length(frame_list))){
+  new_frame<-frame_list[[i]][c(1,8)]
+  #new_frame[,2]<-log10(new_frame[,2])
+  new_frame_list[[i]]<-new_frame
+} # creates the dataframes that the drm function can take as input (y values in first column, doses/x values in second column)
+
+drm_model<-mapply(drm,data=new_frame_list,fct=list_formulas, MoreArgs = list(logDose=NULL, 
+                  lowerl=c(NA,450,NA,NA)) , SIMPLIFY = F) # the lower bound for the second 
+
+plot(drm_model[[2]], ylim=c(0,60000), xlim=c(0,600), log="x")
+plot(drm_model[[4]], ylim=c(0,60000), xlim=c(0,600), log="x")
+
+
+parameters<-list()
+
+for(i in c(1:length(drm_model))){
+  parameter<-drm_model[[i]]$coefficients
+  parameters[[i]]<-c(parameter, list_p1[[i]], list_p2[[i]])
+  
+}
+
+sigmoid_fit_descriptives<-lapply(parameters,f_sigmoid_fit,x_values)
+
+# plot the fitted lines and the individual data points
+sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
+                                    control_list_sigmoid, ec_list_descriptives)
+
+sigmoid_plot
+
+sigmoid_plot_zoom<-sigmoid_plot + scale_x_continuous(breaks = c(0,20,60,100),
+                    #trans = "log10",
+                    limits=c(0,100)) + theme(legend.position = "none")
+
+sigmoid_plot_zoom
+
+f_save(sigmoid_plot + xlab("") + ylab(""),"sigmoid_fit.jpeg",
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save(sigmoid_plot_zoom,"sigmoid_fit_zoom.jpeg",
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save_pdf(sigmoid_plot + xlab("") + ylab(""),"sigmoid_fit",
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save_pdf(sigmoid_plot_zoom,"sigmoid_fit_zoom",
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+#--------------------------------------------------------------------------------------
+# plot derivative of the sigmoid_fit
+
+x_values_d<-seq(0.19,
+                max(frame_list[[1]][,8]),length.out=10000) # for the derivative estimation
+
+axis_break1<-0.19
+
+sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
+
+derivative_plot<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_derivative, c(1:10))
+
+derivative_plot
+
+f_save(derivative_plot,paste("derivative_sigmoid.jpeg",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save_pdf(derivative_plot,paste("derivative_sigmoid.pdf",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+#--------------------------------------------------------------------------------------
+## check for correlation between size and induction. 
+spearman_dfs<-c(41,42,43,44)
+label_list_spearman<-c("420")
+control_label_list<-c("no repressor","pTDH3","fry70")
+
+spearman_list<-df_with_size[spearman_dfs]
+
+
+# replace 0 values in the doses with 0.19
+for(i in c(1:length(spearman_list))){
+  for(k in c(1:nrow(spearman_list[[i]]))){
+    if(spearman_list[[i]][k,4]== 0){
+      spearman_list[[i]][k,4]<-0.19
+    }
+  }
+}
+
+spearman_doses<-c(0.19,unique(frame_list[[1]][,8])[-1])
+
+variances<-vector("list",length(spearman_list))
+
+for(k in c(1:length(spearman_list))){
+  variance<-vector()
+  for(i in spearman_doses){
+    dataframe<-spearman_list[[k]][which(spearman_list[[k]][,4]==i),]
+    var<-cor(dataframe[,3],dataframe[,5], method = "spearman")
+    variance<-c(variance,var)
+    
+  }
+  variances[[k]]<-variance
+}
+
+variances_data<-variances[[1]]
+variances_control<-variances[c(2,3,4)]
+
+
+spearman_frames<-as.data.frame(cbind(variances_data,spearman_doses))
+
+formula_logistic_spearman<-CRS.6(method="1")
+
+drm_model_spearman<-drm(spearman_frames,fct=formula_logistic_spearman,logDose=NULL)
+plot(drm_model_spearman, ylim=c(0.40,0.90))
+
+
+parameters_spearman<-drm_model_spearman$coefficients
+
+x_values_spearman<-lseq(0.19,600,length.out = 10000)
+
+spearman_fit<-f_sigmoid_fit_spearman(parameters_spearman,x_values_spearman)
+
+
+xlim_spearman<-c(0.19,600)
+spearman<-f_spearman_fit_plot(spearman_fit,c("6h"),spearman_frames)
+
+spearman
+
+f_save(spearman,paste("spearman.jpeg",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save_pdf(spearman,paste("spearman.pdf",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r visualizing the fp fits}
+bd<-2
+cd<-500
+dd<-50000
+ed<--0.5
+p1d<--2
+p2d<-1
+f_deneme<-function(x){
+  (cd + ((dd-cd)/(1+ exp((bd*(log(x+1))^p1d)+(ed*(log(x+1))^p2d)))))
+}
+
+f_deneme_fit<-function(x_values){    
+  sigmoid_fit <- f_deneme(x_values)
+  return(sigmoid_fit)
+}
+
+
+fits<-f_deneme_fit(x_values)
+
+ggplot() +
+  geom_line(aes(x=x_values, y=fits)) +
+  theme_bw() +
+  scale_x_log10()
+
+```
+

@@ -23,7 +23,7 @@ t9p1_file<-"figure1/180419_2opypd/6h/controls" # 180327
 pattern_read<-"Specimen_001"
 
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/figure1"
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/drm_package/spearman"
 # create folders named size, svf, histograms, boxplots under this directory. 
 
 starting_well<-1
@@ -187,7 +187,7 @@ f_plot_sigmoid_curves_single<-
                                  y=ec90_yvalue,
                                  shape=paste("EC90",strain)),size=ec_size) 
       
-      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+     final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
       
     }
     
@@ -196,9 +196,9 @@ f_plot_sigmoid_curves_single<-
       scale_shape_manual(values = c("EC10 NF"=0,
                                     "EC50 NF"=1,
                                     "EC90 NF"=2,
-                                    "EC10 pAct1"=17,
-                                    "EC50 pAct1"=16,
-                                    "EC90 pAct1"=15)) +
+                                    "EC10 OL"=17,
+                                    "EC50 OL"=16,
+                                    "EC90 OL"=15)) +
       scale_colour_manual(values = colour_palette) +
       scale_x_continuous(breaks = doses_experiment,
                     labels = labels_x_axis, 
@@ -265,10 +265,10 @@ f_ec_yvalues<-function(fit_list,ec_list){
 
 
 ```{r derivative plotting function}
-f_fit_function<-function(x) ( e+ (a-e)/((1 + ((x/c)^b))^(d)))
+f_fit_function<-function(x)  ( e+ (a-e)/((1 + ((x/c)^b))^(d)))
 d_fit_function<-D(body(f_fit_function),'x')
 
-f_d_sigmoid <- function(params, x) {
+f_d_sigmoid <- function(params, x, max) {
   # -((params[1] - params[5]) * ((1 + ((x/params[3])^params[2]))^((params[4]) - 1) * 
   #                                ((params[4]) * ((x/params[3])^(params[2] - 1) * 
   #                                                  (params[2] * (1/params[3])))))/((1 +
@@ -279,15 +279,16 @@ f_d_sigmoid <- function(params, x) {
   c<-params[3]
   d<-params[4]
   e<-params[5]
+ 
+   (-((a - e) * ((1 + ((x/c)^b))^((d) - 1) * ((d) * ((x/c)^(b - 1) *
+     (b * (1/c)))))/((1 + ((x/c)^b))^(d))^2))*100/max
   
- -((a - e) * ((1 + ((x/c)^b))^((d) - 1) * ((d) * ((x/c)^(b - 1) * 
-    (b * (1/c)))))/((1 + ((x/c)^b))^(d))^2)
   
 }
 
 
-f_d_sigmoid_fit<-function(params,x_values_d){    
-  sigmoid_fit <- f_d_sigmoid(params,x_values_d)
+f_d_sigmoid_fit<-function(params,x_values_d, max){    
+  sigmoid_fit <- f_d_sigmoid(params,x_values_d, max)
   return(sigmoid_fit)
 }
 
@@ -354,7 +355,7 @@ f_plot_sigmoid_d<-function(x_values_d, y_values, label_list,ylims,y_value_list,s
                                     "EC50 OL"=16,
                                     "EC90 OL"=15)) +
     guides(colour=guide_legend(title = "")) +
-    ylab("Slope") +
+    ylab(expression(paste(Delta,"Fluorescence (% of max)"))) +
     scale_colour_manual(values = colour_palette) +
     xlab(xlabel) +
     scale_x_continuous(breaks = doses_experiment,
@@ -378,6 +379,9 @@ f_plot_sigmoid_d<-function(x_values_d, y_values, label_list,ylims,y_value_list,s
 ```
 
 ```{r spearman plot}
+
+
+
 f_spearman_plot<-function(variance_list,control_variances,label_list, control_label_list,plot_doses,span){
   
   final_plot<- ggplot() 
@@ -757,7 +761,7 @@ fit<-lapply(sigmoid_fit_parameters,f_sigmoid_fit,x_values)
 sigmoid_plot<-f_plot_sigmoid_curves_single(fit,frame_list, control_frame_list,
                                     dose_control, label_list_control, xlim, ylim,ec_list,strain_list)
 
-sigmoid_plot
+sigmoid_plot + scale_y_log10()
 
 ggsave(sigmoid_plot,filename =  "ypd.jpeg", path=output_path, height=6, width=9.04, units = "cm")
 ggsave(sigmoid_plot,filename =  "ypd.pdf", path=output_path, height=6, width=9.04, units = "cm")
@@ -768,7 +772,9 @@ ggsave(sigmoid_plot,filename =  "ypd.pdf", path=output_path, height=6, width=9.0
 x_values_d<-seq(0,
                max(frame_list[[1]][,8]),length.out=10000)
 
-sigmoid_d_fit<-lapply(sigmoid_fit_parameters,f_d_sigmoid_fit,x_values_d)
+maximums<-c(max(fit[[1]]), max(fit[[2]]))
+
+sigmoid_d_fit<-mapply(f_d_sigmoid_fit,sigmoid_fit_parameters, maximums, MoreArgs = list(x_values_d=x_values_d), SIMPLIFY = F)
 
 ec_y_values<-f_ec_yvalues(sigmoid_d_fit,ec_list)
 
@@ -779,7 +785,7 @@ colour_by_strain<-FALSE
 f_derivative_plot<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_sigmoid, ylims, ec_y_values,
                                     strain_list)
 
-f_derivative_plot
+f_derivative_plot 
 ggsave(f_derivative_plot,filename =  "ypd_derivative.jpeg", path=output_path, height=6, width=9.04, units = "cm")
 ggsave(f_derivative_plot,filename =  "ypd_derivative.pdf", path=output_path, height=6, width=9.04, units = "cm")
 
@@ -820,9 +826,75 @@ for(k in c(1:length(spearman_list))){
 
 variances_data<-variances[c(1,2)]
 variances_control<-variances[c(3,4)]
+
+spearman_frames<-list(as.data.frame(cbind(variances_data[[1]],frame_list[[1]][,8])),
+                      as.data.frame(cbind(variances_data[[2]],frame_list[[1]][,8])))
+
+formula_logistic_spearman<-CRS.6(method="1")
+
+drm_model_spearman<-lapply(spearman_frames,drm,fct=formula_logistic_spearman,logDose=NULL)
+plot(drm_model_spearman[[1]], ylim=c(0.60,0.90))
+plot(drm_model_spearman[[2]], ylim=c(0.60,0.90))
+
+
+
+parameters_spearman<-list()
+
+for(i in c(1:length(drm_model_spearman))){
+  parameter<-drm_model_spearman[[i]]$coefficients
+  parameters_spearman[[i]]<-parameter
+  
+}
+
+x_values_spearman<-lseq(0.19,600,length.out = 1000)
+
+spearman_fit<-lapply(parameters_spearman,f_sigmoid_fit_spearman,x_values_spearman)
+
+f_spearman_fit_plot<-function(fit,label,data){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(fit))){
+    single_layer<- geom_line(aes_(x=x_values_spearman,y=fit[[i]], colour=label[[i]]))
+    final_plot<-final_plot+single_layer
+  }
+  
+  for(i in c(1:length(data))){
+    single_layer<-geom_point(aes_(x=data[[i]][,2], y=data[[i]][,1], colour=label[[i]]))
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  pretty_plot<- final_plot +
+     ylab("Spearman Correlation") +
+    scale_colour_manual(values = colour_palette) +
+    scale_linetype_manual(values=c("longdash", "dotdash")) +
+    xlab(xlabel) +
+    scale_x_continuous(breaks = doses_experiment,
+                    labels = labels_x_axis, 
+                    limits = xlim,
+                    trans = "log10") +
+    scale_y_continuous(limits=c(0.60,0.9), breaks = c(0.60,0.65,0.70,0.75,0.80,0.85,0.90)) +
+    theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1 ),
+            panel.background = element_blank()
+            ) 
+  
+  
+  return(pretty_plot)
+  
+}
+
+spearman_hormesis<-f_spearman_fit_plot(spearman_fit,c("NF","OL"),spearman_frames)
+
 spearman<-f_spearman_plot(variances_data,variances_control,label_list_spearman,control_label_list_spearman, spearman_doses, 0.35)
 spearman
-ggsave(spearman,filename =  "ypd_spearman.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(spearman_hormesis,filename =  "ypd_spearman_hormesis.jpeg", path=output_path, height=6, width=9.04, units = "cm")
 ggsave(spearman,filename =  "ypd_spearman.pdf", path=output_path, height=6, width=9.04, units = "cm")
 
 ```

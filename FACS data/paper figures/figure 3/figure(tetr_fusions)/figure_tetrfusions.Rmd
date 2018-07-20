@@ -168,3 +168,40 @@ fold_repression_list
 
 ```
 
+
+```{r tup1 repression of 2op}
+r2<-df_list[[24]] #repressed 2op with tup1 vph1
+f70<-df_list[[2]] #fry70
+rf<-df_list[[12]] #repressed final p with tup1 vph1
+
+formatter<-function(x){x*1000}
+
+
+ggplot() +
+  geom_density(aes(x=rf[,3], colour="finalP")) +
+  geom_density(aes(x=f70[,3],colour="autofluorescence")) +
+  geom_density(aes(x=r2[,3],colour="2op")) +
+  theme(panel.grid.minor = element_blank(),
+            #legend.direction = "horizontal",
+            legend.position = c(0.8,0.6), 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) +
+   scale_x_continuous(limit=c(0,2000), breaks = seq(0,2000, length.out = 5)) +
+   scale_y_continuous(limit=c(0,0.002), breaks = seq(0,0.002, length.out = 6), labels = formatter)+
+  ylab(expression(paste("Density x ","10" ^ "-3", sep=""))) +
+  xlab("Fluorescence (a.u.)")
+
+ggsave(path=output_path, filename = "sup_2optup1.pdf",height=6, width=9.04, units = "cm")
+ggsave(path=output_path, filename = "sup_2optup1.jpeg",height=6, width=9.04, units = "cm")
+```
+

@@ -1,5 +1,6 @@
 
 library(ggplot2)
+library(tcpl)
 
 
 
@@ -25,7 +26,7 @@ f_smooth<-function(descriptive_list,label_list,stat,legend_title,ncol_legend,sca
                                aes_(x=descriptive_list[[i]][,8],
                                     y=descriptive_list[[i]][,stat],
                                     colour=label_list[i]),
-                               se=FALSE,size=1.5)
+                               se=FALSE,size=1.5,span=0.1)
     final_plot<-final_plot+smooth_layer
   }
   
@@ -243,15 +244,14 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
   frame <- (grep(name, names(data_list), value= FALSE))
   
   plot<-ggplot() +
-    geom_point(aes(x=data_list[[frame[1]]][,dose_column],
-                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]]),
-               size=size_value_descriptives) +
-    geom_point(aes(x=data_list[[frame[2]]][,dose_column],
-                   y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]]),
-               size=size_value_descriptives) +
-    geom_point(aes(x=data_list[[frame[3]]][,dose_column],
-                   y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]]),
-               size=size_value_descriptives) +
+    geom_point(aes_(x=data_list[[frame[1]]][,dose_column],
+                   y=data_list[[frame[1]]][,stat_column], colour=colour_labels[[1]])) +
+    # geom_point(aes(x=data_list[[frame[2]]][,dose_column],
+    #                y=data_list[[frame[2]]][,stat_column], colour=colour_labels[[2]]),
+    #            size=size_value_descriptives) +
+    # geom_point(aes(x=data_list[[frame[3]]][,dose_column],
+    #                y=data_list[[frame[3]]][,stat_column], colour=colour_labels[[3]]),
+    #            size=size_value_descriptives) +
     # geom_point(aes(x=data_list[[frame[4]]][,dose_column],
     #                y=data_list[[frame[4]]][,stat_column], colour=colour_labels[[4]]),
     #            size=size_value_descriptives) +
@@ -263,8 +263,6 @@ f_point_plots<- function(name,dose_column,data_list,stat_column,palette,
     xlab(xlab_title) +
     ylab(ylab_title) +
     guides(colour=guide_legend(title=legend_title)) 
-  
-  
   return(plot)
 }
 
@@ -287,21 +285,21 @@ f_descriptive_plotting<-function(){
   
   for(i in stat_columns_1){
     
-    plot_list<-lapply(strain_names,f_point_plots,
-                      data_list = descriptives, dose_column = 8, stat_column = i,
+    plot_list<-lapply(strain_names[c(1,2)],f_point_plots,
+                      data_list = descriptives[c(1,2)], dose_column = 8, stat_column = i,
                       palette=palette,colour_labels=colour_labels,scale_x_breaks=scale_x_breaks,
                       xlab_title=xlab_title,ylab_title=ylab_title,legend_title=legend_title)
-    names(plot_list) <- strain_names
+    names(plot_list) <- strain_names[c(1,2)]
     
     all_plots_1<-c(all_plots_1,plot_list)
   }
   
   for(i in stat_columns_2){
-    plot_list<-lapply(strain_names,f_point_plots,
-                      data_list = descriptives, dose_column = 8, stat_column = i,
+    plot_list<-lapply(strain_names[c(1,2)],f_point_plots,
+                      data_list = descriptives[c(1,2)], dose_column = 8, stat_column = i,
                       palette=palette,colour_labels=colour_labels,scale_x_breaks=scale_x_breaks,
                       xlab_title=xlab_title,ylab_title=ylab_title,legend_title=legend_title)
-    names(plot_list) <- strain_names
+    names(plot_list) <- strain_names[c(1,2)]
     
     all_plots_2<-c(all_plots_2,plot_list)
   }
@@ -320,18 +318,23 @@ f_descriptive_plotting<-function(){
 f_density_plot<-function(dataframe,labels,doses,size_column, citrine_column, 
                          legend_position,palette, x_breaks, legend_title, ncol_legend){
   
-  final_plot<-ggplot()  
+  # final_plot<-ggplot()  
   dataframe<-as.data.frame(dataframe)
-  for(i in doses){
-    single_layer<- geom_density_2d(
-      aes_(x=dataframe[which(dataframe[,dose_column]==i),size_column],
-           y=dataframe[which(dataframe[,dose_column]==i),citrine_column],
-           colour=labels[which(doses==i)]), 
-      size=1) 
-    
-    final_plot<- final_plot + single_layer
-  }
-  
+  # for(i in doses){
+  #   single_layer<- geom_density_2d(
+  #     aes_(x=dataframe[which(dataframe[,dose_column]==i),size_column],
+  #          y=dataframe[which(dataframe[,dose_column]==i),citrine_column],
+  #          colour=labels[which(doses==i)]), 
+  #     size=1) 
+  #   
+  #   final_plot<- final_plot + single_layer
+  # }
+  final_plot<- 
+    ggplot(dataframe) +
+    geom_hex(
+      aes_(x=dataframe[,size_column],
+           y=dataframe[,citrine_column]),bins=100) +
+    facet_wrap(~Dose)
   
   pretty_plot<- final_plot + 
     theme_bw() + 
@@ -340,7 +343,10 @@ f_density_plot<-function(dataframe,labels,doses,size_column, citrine_column,
           legend.text = element_text(size=6),
           legend.key.size = unit(0.3,"cm"),
           legend.background = element_blank(),
-          plot.title = element_text(size=8,face="bold")) +
+          plot.title = element_text(size=8,face="bold"), 
+          axis.title = element_text(size=6),
+          axis.text = element_text(size=6),
+          strip.text = element_text(size=4)) +
     xlab("Size") + ylab("Fluorescence (a.u.)") +
     scale_colour_manual(values = palette,
                         breaks = x_breaks) +
@@ -409,8 +415,9 @@ f_size_vs_fluorescence_comp<-function(sequence,title,df_list,size_column,size_va
 
 f_boxplot<-function(frames,ylimits){
   plot<-ggplot(frames) +
-    geom_boxplot(aes(x=reorder(L1,value,FUN="median"),y=value))+
-    coord_flip() +
+    geom_violin(aes(x=Dose,y=value))+
+    #coord_flip() +
+    facet_grid(strain~time)+
     ylim(ylimits) +
     theme_bw() +
     theme(panel.background = element_blank(),
@@ -439,8 +446,8 @@ function_curve_fitting<-
   # asymptote. you can define these individually for every curve.
   # a negative b gives you an inverse sigmoid, a positive one gives you a sigmoid. 
   # the function creates a list of fitted values, one for each "frame" input. 
-  function(frame,list_of_starting_points, print){
-    print(print)
+  function(frame,list_of_starting_points){
+    
     
     x = frame[,8]
     y = frame[,1]
@@ -475,7 +482,138 @@ f_ecs<-function(params){
 }
 
 
+f_sigmoid <- function(params, x) {
+  ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
+                                            (params[4]))))
+}
 
+f_sigmoid_fit<-function(params,x_values){    
+  sigmoid_fit <- f_sigmoid(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
+
+
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_list,control_list_sigmoid, ec_list, doses){
+  
+    
+    final_plot<-ggplot() 
+    
+    
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values_plotting, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # # plot controls
+    # for (k in c(1:length(control_list))){
+    #   single_layer_line<- geom_line(aes_(x=control_list[[k]][,8][c(1,24)],
+    #                                      y=control_list[[k]][,1][c(1,24)],
+    #                                        colour=control_list_sigmoid[[k]]))   
+    #   final_plot<-final_plot+single_layer_line
+    # }
+    
+    for(l in c(1:length(ec_list))){
+      ec10<-round(ec_list[[l]][1],2)
+      ec10_xvalue<-mean(which(round(x_values,2)==ec10))
+      ec10_yvalue<-fit_list[[l]][as.integer(ec10_xvalue)]
+      
+      ec50<-round(ec_list[[l]][2],2)
+      ec50_xvalue<-mean(which(round(x_values,2)==ec50))
+      ec50_yvalue<-fit_list[[l]][as.integer(ec50_xvalue)]
+      
+      ec90<-round(ec_list[[l]][3],1)
+      ec90_xvalue<-mean(which(round(x_values,1)==ec90))
+      ec90_yvalue<-fit_list[[l]][as.integer(ec90_xvalue)]
+      print(ec90)
+      print(ec90_xvalue)
+      print(ec90_yvalue)
+      
+      ec10_layer<-geom_point(aes_(x=ec10,
+                                 y=ec10_yvalue,
+                                 colour="EC10")) 
+      ec50_layer<-geom_point(aes_(x=ec50,
+                                 y=ec50_yvalue,
+                                 colour="EC50")) 
+      ec90_layer<-geom_point(aes_(x=ec90,
+                                 y=ec90_yvalue,
+                                 colour="EC90")) 
+      
+      final_plot<-final_plot + ec10_layer + ec50_layer + ec90_layer
+      
+    }
+    
+    
+    pretty_plot<-final_plot +
+      scale_colour_manual(values = colour_palette) +
+      scale_x_log10(breaks = breaks_sigmoid,
+                    labels = labels_x_axis) +
+      guides(colour=guide_legend(title = "Strains",nrow=2)) +
+      #scale_y_log10() +
+      ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab("Fluorescence (a.u.)") +
+      theme_bw() +
+      theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "bottom") +
+      expand_limits(x=0.3)
+    
+    return(pretty_plot)
+  }
+
+#----------------------------------------------------------------------------------------
+## plot derivative of the sigmoid fit
+
+f_fit_function<-function(x) (e + (a-e)/((1 + ((((x/c)^b))^(d)))))
+d_fit_function<-D(body(f_fit_function),'x')
+
+f_d_sigmoid <- function(params, x) {
+  -((params[1] - params[5]) * ((1 + ((x/params[3])^params[2]))^((params[4]) - 1) * 
+                                 ((params[4]) * ((x/params[3])^(params[2] - 1) * 
+                                                   (params[2] * (1/params[3])))))/((1 +
+                                                                                      ((x/params[3])^params[2]))^
+                                                                                     (params[4]))^2)
+}
+
+
+f_d_sigmoid_fit<-function(params,x_values_d){    
+  sigmoid_fit <- f_d_sigmoid(params,x_values_d)
+  return(sigmoid_fit)
+}
+
+f_plot_sigmoid_d<-function(x_values_d, y_values, label_list){
+  
+  final_plot<- ggplot() 
+  
+  for(i in c(1:length(y_values))){
+    single_layer<-geom_line(aes_(x=x_values_d,y=y_values[[i]], colour=label_list[[i]]))
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot +
+    theme_bw() +
+    theme(legend.position = c(0.8,0.8)) +
+    guides(colour=guide_legend(title = "Strain")) +
+    ylab("D of Sigmoid Fit") +
+    xlab("Dose") +
+    scale_color_manual(values=colour_palette) +
+    scale_x_log10()
+  
+  return(pretty_plot)
+}
 
 #----------------------------------------------------------------------------------------
 
@@ -501,7 +639,44 @@ return(qqplot)
 
 }
 
+
 #----------------------------------------------------------------------------------------
+
+## plotting each dose individually to see distributions. 
+
+f_individual_histograms<-function(dataframe, xlimits, x_breaks,y_breaks, ylimits){
+  f_formatter_x<-function(x){x/1000}
+  x_labels<-f_formatter_x(x_breaks)
+  
+  f_formatter_y<-function(y){y*10000}
+  y_labels<-f_formatter_y(y_breaks)
+  
+  # dataframe<-subset(dataframe,dataframe[,2])
+  final_plot<-ggplot(dataframe) +
+    geom_density(aes(x=dataframe[,3]))+
+    facet_wrap(~Dose) +
+    
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(), 
+          strip.text.x = element_text(size=3,
+                                      margin=margin(0,0,0,0,"cm"))) +
+    scale_x_continuous(limits = xlimits, breaks=x_breaks,labels=x_labels) +
+    scale_y_continuous(limits= ylimits, breaks = y_breaks, labels = y_labels) +
+    ylab(expression(paste("Density",10^-4,sep = " "))) +
+    xlab(expression(paste("Fluorescence",10^3,sep = " "))) 
+  
+  
+  return(final_plot)
+  
+  
+}
+
+
+
+#----------------------------------------------------------------------------------------
+# plotting spearman correlation between size and fluorescence. 
+
+
 f_spearman_plot<-function(variance_list,label_list){
   
   final_plot<- ggplot() 
@@ -520,76 +695,3 @@ f_spearman_plot<-function(variance_list,label_list){
     xlab("[aTc] (ng/mL)")
   
 }
-
-#----------------------------------------------------------------------------------------
-## geom_flat_violin function taken frmo the internet for plotting split violin plots. 
-library(ggplot2)
-library(dplyr)
-
-
-"%||%" <- function(a, b) {
-  if (!is.null(a)) a else b
-}
-
-geom_flat_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
-                             position = "dodge", trim = TRUE, scale = "area",
-                             show.legend = NA, inherit.aes = TRUE, ...) {
-  layer(
-    data = data,
-    mapping = mapping,
-    stat = stat,
-    geom = GeomFlatViolin,
-    position = position,
-    show.legend = show.legend,
-    inherit.aes = inherit.aes,
-    params = list(
-      trim = trim,
-      scale = scale,
-      ...
-    )
-  )
-}
-
-#' @rdname ggplot2-ggproto
-#' @format NULL
-#' @usage NULL
-#' @export
-GeomFlatViolin <-
-  ggproto("GeomFlatViolin", Geom,
-          setup_data = function(data, params) {
-            data$width <- data$width %||%
-              params$width %||% (resolution(data$x, FALSE) * 0.9)
-            
-            # ymin, ymax, xmin, and xmax define the bounding rectangle for each group
-            data %>%
-              group_by(group) %>%
-              mutate(ymin = min(y),
-                     ymax = max(y),
-                     xmin = x,
-                     xmax = x + width / 2)
-            
-          },
-          
-          draw_group = function(data, panel_scales, coord) {
-            # Find the points for the line to go all the way around
-            data <- transform(data, xminv = x,
-                              xmaxv = x + violinwidth * (xmax - x))
-            
-            # Make sure it's sorted properly to draw the outline
-            newdata <- rbind(plyr::arrange(transform(data, x = xminv), y),
-                             plyr::arrange(transform(data, x = xmaxv), -y))
-            
-            # Close the polygon: set first and last point the same
-            # Needed for coord_polar and such
-            newdata <- rbind(newdata, newdata[1,])
-            
-            ggplot2:::ggname("geom_flat_violin", GeomPolygon$draw_panel(newdata, panel_scales, coord))
-          },
-          
-          draw_key = draw_key_polygon,
-          
-          default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = 0.5,
-                            alpha = NA, linetype = "solid"),
-          
-          required_aes = c("x", "y")
-  )

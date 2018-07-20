@@ -153,7 +153,14 @@ ec_list_descriptives<-lapply(parameters,f_ecs)
 sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
                                     control_list_sigmoid, ec_list_descriptives)
 
+sigmoid_plot
+sigmoid_plot + xlim(0,5) + ylim(0,2000)
+
 f_save(sigmoid_plot,paste("sigmoid_fit.jpeg",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save(sigmoid_plot+ xlim(0,5) + ylim(0,2000),paste("sigmoid_fit_zoom.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 

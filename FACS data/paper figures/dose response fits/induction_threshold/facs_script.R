@@ -127,7 +127,7 @@ for(i in c(1:length(frame_list))){
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
-x_values<-c(0,lseq(min(frame_list[[1]][,8]),
+x_values<-c(0.19,lseq(min(frame_list[[1]][,8]),
                max(frame_list[[1]][,8]),1000))
 
 x_values_plotting<-c(min(frame_list[[1]][,8]),x_values[c(2:length(x_values))])
@@ -153,7 +153,16 @@ ec_list_descriptives<-lapply(parameters,f_ecs)
 sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,frame_list, control_list,
                                     control_list_sigmoid, ec_list_descriptives)
 
-f_save(sigmoid_plot,paste("sigmoid_fit.jpeg",time_point_sigmoid,sep = "_"),
+
+sigmoid_plot
+sigmoid_plot +xlim(0,5) + ylim(0,2000)
+
+
+f_save(sigmoid_plot,paste("sigmoid_fit_fplogistic.jpeg",time_point_sigmoid,sep = "_"),
+       output_folder=output_path,output_path="", 
+       height=height_sigmoid, width=width_sigmoid)
+
+f_save(sigmoid_plot+xlim(0,5) + ylim(0,2000)+theme(legend.position = "none"),paste("sigmoid_fit_fplogistic_zoom.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
@@ -164,7 +173,7 @@ f_save_pdf(sigmoid_plot,paste("sigmoid_fit",time_point_sigmoid,sep = "_"),
 #----------------------------------------------------------------------------------
 # plot derivative of the sigmoid_fit
 
-x_values_d<-seq(0,
+x_values_d<-seq(0.19,
                 max(frame_list[[1]][,8]),length.out=10000) # for the derivative estimation
 
 axis_break1<-0.19
@@ -173,8 +182,9 @@ sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
 
 derivative_plot<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_derivative)
 
+derivative_plot
 
-f_save(derivative_plot,paste("derivative_sigmoid.jpeg",time_point_sigmoid,sep = "_"),
+f_save(derivative_plot,paste("derivative_sigmoid_fplogistic.jpeg",time_point_sigmoid,sep = "_"),
        output_folder=output_path,output_path="", 
        height=height_sigmoid, width=width_sigmoid)
 
@@ -220,6 +230,11 @@ for(k in c(1:length(spearman_list))){
 
 variances_data<-variances[[1]]
 variances_control<-variances[c(2,3)]
+
+
+
+
+
 spearman<-f_spearman_plot(list(variances_data),label_list_spearman, variances_control,labels_x_axis,
                           control_label_list)
 

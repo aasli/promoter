@@ -15,7 +15,7 @@ df_list<-c(f_df_list(t0p1,starting_well,wells_per_sample,ypethanol_doses,columns
            f_df_list(t3p1,starting_well,2,c(0,400),columns_to_include),
            f_df_list(t1p1,starting_well,wells_per_sample,glycerol_doses,columns_to_include),
            f_df_list(t4p1,starting_well,2,c(0,600),columns_to_include),
-           f_df_list(t2p1,starting_well,24,proline_doses,columns_to_include),
+           f_df_list(t2p1,starting_well,16,proline_doses,columns_to_include),
            f_df_list(t5p1,starting_well,2,c(0,600),columns_to_include),
            f_df_list(t6p1,starting_well,24,sd_doses,columns_to_include),
            f_df_list(t7p1,starting_well,2,c(0,600),columns_to_include)

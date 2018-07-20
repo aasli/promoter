@@ -1,0 +1,946 @@
+---------
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+source("common_functions.R")
+source("stat_functions.R")
+#source("plotting_functions.R")
+
+t0p1_file<-"figure1/ethanol (24h)/" #180405
+t1p1_file<-"figure1/glycerol(48h)/" #180515
+t2p1_file<-"figure1/proline (24h)/" #180313
+t6p1_file<-"figure1/sd (6h)/" # 180327
+t8p1_file<-"figure1/180419_2opypd/6h" # 180327
+t3p1_file<-"figure1/ethanol (24h)/controls" #180405
+t4p1_file<-"figure1/glycerol(48h)/controls" #180515
+t5p1_file<-"figure1/proline (24h)/controls"  #180313
+t7p1_file<-"figure1/sd (6h)/controls" # 180327
+t9p1_file<-"figure1/180419_2opypd/6h/controls" # 180327
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/figure1/drm_package"
+# create folders named size, svf, histograms, boxplots under this directory. 
+
+starting_well<-1
+wells_per_sample<-24
+
+
+ypethanol_doses<-c(0,0.2,1,2,3,4,5,6,8,10,13,15,17,20,26,30,35,45,50,65,80,100,200,400)
+glycerol_doses<-c(0,0.2,0.5,1,2,4,5,7,8,10,12,14,16,18,20,25,27,30,45,60,100,200,400,600)
+proline_doses<-c(0,0.2,0.5,0.7,1,1.5,2,2.5,3,4,5,6,7,8,10,12,15,20,25,30,40,45,60,200)
+sd_doses<- c(0,0.2,1,3,4,5,7,10,13,17,23,30,40,50,70,100,130,150,180,200,250,300,350,400)
+ypd_doses<- c(0,0.5,1,3,5,8,12,15,17,21,23,25,30,35,40,50,60,75,100,150,200,300,400,600)
+ypd_doses_desc<-c(0,0.5,1,3,5,8,12,15,17,21,23,25,30,35,40,50,60,75,100,150,200,300,400,600)
+experiment_doses<-list(ypethanol_doses,ypethanol_doses,c(0,400),c(0,400),c(0,400),
+                       glycerol_doses, glycerol_doses,c(0,600),c(0,600),c(0,600),
+                       proline_doses, proline_doses,c(0,200),c(0,200),c(0,200),
+                       sd_doses,sd_doses,c(0,400),c(0,400),c(0,400),
+                       ypd_doses,ypd_doses,c(0,600),c(0,600),c(0,600))
+
+experiment_doses_desc<-list(ypethanol_doses,ypethanol_doses,c(0,400),c(0,400),c(0,400),
+                       glycerol_doses, glycerol_doses,c(0,600),c(0,600),c(0,600),
+                       proline_doses, proline_doses,c(0,200),c(0,200),c(0,200),
+                       sd_doses,sd_doses,c(0,400),c(0,400),c(0,400),
+                       ypd_doses_desc,ypd_doses_desc,c(0,600),c(0,600),c(0,600))
+
+columns_to_include<-c(2,5,3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+strain_names<-c("2561eth","2562eth","2551eth","2683eth","70eth",
+                "2561gly","2562gly","2551gly","2683gly","70gly",
+                "2561pro","2562pro","2551pro","2683pro","70pro",
+                "2561sd","2562sd","2551sd","2683sd","70sd",
+                "2561ypd","2562ypd","2551ypd","2683ypd","70ypd"
+                ) 
+time_points<-c("24h")
+
+label_list<- c("2op NF_eth",
+               "2op pAct1_eth",
+               "fry70_eth",
+               "no repressor_eth",
+               "tdh3_eth",
+               "2op NF_gly",
+               "2op pAct1_gly",
+               "fry70_gly",
+               "no repressor_gly",
+               "tdh3_gly",
+               "2op NF_pro",
+               "2op pAct1_pro",
+               "no repressor_pro",
+               "tdh3_pro",
+               "fry70_pro",
+               "2op NF_sd",
+               "2op pAct1_sd",
+               "no repressor_sd",
+               "tdh3_sd",
+               "fry70_sd",
+               "2op NF_ypd",
+               "2op pAct1_ypd",
+               "no repressor_ypd",
+               "tdh3_ypd",
+               "fry70_ypd"
+               )
+
+names(label_list)<-strain_names
+
+xlabel<-"aTc [ng/mL]"
+
+```
+
+
+
+```{r}
+
+## pick the values to subset the data with. 
+
+columns <-c(3:6) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-250000 #the value for subsetting based on FSC-W/H
+limit_sscw <-250000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-25000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-TRUE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#----------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+
+
+```
+
+```{r plotting function}
+
+
+
+f_sigmoid <- function(params, x) {
+  
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  p1<-params[[5]]
+  p2<-params[[6]]
+  
+  (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic
+}
+
+
+f_sigmoid_fit<-function(params,x_values){  
+   print(params)
+  sigmoid_fit <- f_sigmoid(params,x_values)
+ 
+  return(sigmoid_fit)
+}
+
+# creating the individual plots
+library("minpack.lm")
+library("ggthemes")
+## plotting the sigmoid curves.
+xlabel<-expression(paste("aTc [ng/mL]"))
+
+f_plot_sigmoid_curves_single<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_frame_list,dose_control,label_list_control, xlim, ylim,strain_list,doses){
+    formatter<-function(x){x/1000}
+    final_plot<-ggplot() 
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      print(i)
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]), size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+   
+    # plot the controls
+    
+    for(k in c(1:length(control_frame_list))){
+      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
+
+      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+                                             linetype=label_list_control[[k]]), colour="black", 
+                                        show.legend = FALSE)
+      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
+                                              x=x_values))
+
+      final_plot<-final_plot+single_layer_control
+
+    }
+    
+    print(ylim)
+    pretty_plot<-final_plot +
+      scale_linetype_manual(values=c("longdash","dotted", "dotdash")) +
+      
+      scale_colour_manual(values = colour_palette) +
+      scale_x_continuous(breaks = breaks_sigmoid,
+                    labels = labels_x_axis, 
+                    limits = xlim) +
+                    #trans = "log10") +
+      scale_y_continuous(limits = ylim, labels=formatter, 
+                         breaks= ylim_breaks_sigmoid) +
+      
+      guides(colour=guide_legend(nrow=2)) +
+      # ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+      theme(panel.grid.minor = element_blank(),
+            legend.direction = "vertical",
+            legend.position = c(0.8,0.3), 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+    
+      # geom_rangeframe(aes(x=c(min(x_values):max(x_values)), 
+      #                     y=seq(0,50,length.out=length(c(min(x_values):max(x_values))))),sides = "lb") 
+    
+    return(pretty_plot)
+  }
+
+```
+
+```{r derivative plotting function}
+
+f_d_sigmoid <- function(params, x) {
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  p1<-params[[5]]
+  p2<-params[[6]]
+  
+  eval(D(body(f_fit_function),'x'))
+}
+
+
+f_d_sigmoid_fit<-function(params,x_values_d){    
+  sigmoid_fit <- f_d_sigmoid(params,x_values_d)
+  return(sigmoid_fit)
+}
+
+f_plot_sigmoid_d<-function(x_values_d, y_values, label_list,seq){
+  
+  final_plot<- ggplot() 
+  
+  for(i in seq){
+    single_layer<-geom_line(aes_(x=x_values_d,y=y_values[[i]], colour=label_list[[i]]), size=1)
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot +
+    theme(legend.position = c(0.8,0.8)) +
+    guides(colour=guide_legend(title = "Strain")) +
+    ylab("Slope") +
+    xlab(xlabel) +
+    scale_y_continuous(limits=ylims_d, breaks=y_breaks_d)+
+    scale_colour_manual(values=colour_palette) +
+    scale_x_continuous(breaks = breaks_x_axis_d,
+                    labels = labels_x_axis_d, 
+                    trans = "log10", 
+                    limit=c(0.19,200)) +
+      theme(panel.grid = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+  return(pretty_plot)
+}
+
+```
+
+```{r spearman plot}
+
+
+
+f_sigmoid_spearman <- function(params, x) {
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  f<-params[[5]]
+  a<-params[[6]]
+  
+  c + (d-c + f*exp(-1/(x^{a})))/(1+exp(b*(log(x)-log(e))))
+  
+}
+
+f_sigmoid_fit_spearman<-function(params,x_values){ 
+  # takes the parameters for the best fit, any number of x values, and returns a list of y values
+  # for plotting. 
+  sigmoid_fit <- f_sigmoid_spearman(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
+
+# plotting spearman correlation between size and fluorescence. 
+
+
+#########
+
+f_spearman_fit_plot<-function(fit,label,data, control_variances, control_label){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(fit))){
+    single_layer<- geom_line(aes_(x=x_values_spearman,y=fit[[i]], colour=label[[i]]), size=1)
+    final_plot<-final_plot+single_layer
+  }
+  
+  for(i in c(1:length(data))){
+    single_layer<-geom_point(aes_(x=data[[i]][,2], y=data[[i]][,1], colour=label[[i]]), size=1)
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  for (i in c(1:length(variances_control))){
+    single_layer<-geom_line(aes_(x=x_values_spearman,y=variances_control[[i]][1], linetype=control_label[[i]]))
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  pretty_plot<- final_plot +
+   
+    
+     ylab("Spearman Correlation") +
+    scale_colour_manual(values = colour_palette) +
+    scale_linetype_manual(values=c("longdash", "dotdash")) +
+    xlab(xlabel) +
+    scale_x_continuous(breaks = breaks_x_axis_d,
+                    labels = labels_x_axis_d, 
+                    limits = c(0.19,200),
+                    trans = "log10") +
+    scale_y_continuous(limits=c(0.55,0.9), breaks = c(0.6,0.7,0.8,0.9)) +
+    theme(panel.grid.minor = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1 ),
+            panel.background = element_blank()
+            ) 
+  
+  
+  return(pretty_plot)
+  
+}
+
+```
+
+
+
+```{r ypd}
+
+library(drc)
+
+list_p1<-list(-0.6,-0.5)
+
+list_p2<-list(3,0.5)
+
+
+list_formulas<-list()
+
+for(i in c(1:length(list_p1))){
+  formula<- fplogistic(p1=list_p1[[i]],p2=list_p2[[i]])
+  list_formulas[[i]]<-formula
+}
+
+f_fit_function<-function(x) (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic function
+
+
+#--------------------------------------------------------------------------------------
+descriptives_to_use<-c(21,22)
+control_descriptives_to_use<-c(23,24,25)
+labels_to_use<-c(21,22)
+dose_control<-"600"
+xlim<-c(0,150)
+ylim<-c(0,50000)
+ylim_breaks_sigmoid<-seq(0,50000,length.out = 6)
+
+colour_palette<-c("darkred","grey50","grey20","grey50","grey80")
+
+# pick which strains/time_points you want to plot, and their labels
+frame_list<-descriptives[descriptives_to_use]
+label_list_sigmoid<-c("NF","OL")
+label_list_control<-label_list[control_descriptives_to_use]
+
+control_frame_error<-df_list[control_descriptives_to_use]
+# pick your controls
+control_frame_list<-descriptives[control_descriptives_to_use]
+# for(i in c(2,3)){
+#   control_frame_list[[i]][,1]<-control_frame_list[[i]][,1]
+# }
+
+
+
+#define x axis doses and the labels for plotting
+breaks_sigmoid<-c(0,20,60,100,150)
+labels_x_axis<- breaks_sigmoid
+
+
+# # replace 0 values in the doses with 0.1
+# for(i in c(1:length(frame_list))){
+#   frame_list[[i]][1,8]<-0.19
+# }
+
+# generate log distributed x values for smoother line fitting. 
+library(emdbook)
+x_values<-seq(min(frame_list[[1]][,8]),
+               max(frame_list[[1]][,8]),length.out=10000)
+
+strain_list<-c("NF","OL")
+
+
+new_frame_list<-list()
+
+for(i in c(1:length(frame_list))){
+  new_frame<-frame_list[[i]][c(1,8)]
+  #new_frame[,2]<-log10(new_frame[,2])
+  new_frame_list[[i]]<-new_frame
+} # creates the dataframes that the drm function can take as input (y values in first column, doses/x values in second column)
+
+drm_model<-mapply(drm,data=new_frame_list,fct=list_formulas, MoreArgs = list(logDose=NULL 
+                  ), SIMPLIFY = F) # the lower bound for the second 
+
+plot(drm_model[[1]], xlim=c(0,10))
+plot(drm_model[[2]])
+
+
+parameters<-list()
+
+for(i in c(1:length(drm_model))){
+  parameter<-drm_model[[i]]$coefficients
+  parameters[[i]]<-c(parameter, list_p1[[i]], list_p2[[i]])
+  
+}
+
+sigmoid_fit_descriptives<-lapply(parameters,f_sigmoid_fit,x_values)
+
+# plot the fitted lines and the individual data points
+sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list,control_frame_list,
+                                    dose_control, label_list_control,xlim, ylim, strain_list, doses_experiment)
+
+sigmoid_plot 
+
+sigmoid_plot_zoom<-sigmoid_plot + scale_x_continuous(limits=c(0,50), breaks=c(0,25,50)) +
+  theme(legend.direction = "horizontal",
+        legend.position = "top")
+
+sigmoid_plot_zoom
+
+ggsave(sigmoid_plot,filename =  "ypd.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(sigmoid_plot,filename =  "ypd.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+ggsave(sigmoid_plot_zoom,filename =  "ypd_zoom.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(sigmoid_plot_zoom,filename =  "ypd_zoom.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+#---------------------------------------------------------------------------------------------------
+## derivative plot
+
+breaks_x_axis_d<-c(0.19,3,20,60,200)
+labels_x_axis_d<-c(0,3,20,60,200)
+ylims_d<-c(0,NA)
+y_breaks_d<-seq(0,2000,length.out = 6)
+
+
+x_values_d<-seq(0,
+               max(frame_list[[1]][,8]),length.out=10000)
+
+axis_break1<-0.19
+
+sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
+
+derivative_plot<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_sigmoid, c(1:2))
+
+derivative_plot
+
+
+ggsave(derivative_plot,filename =  "ypd_derivative.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(derivative_plot,filename =  "ypd_derivative.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+
+
+#---------------------------------------------------------------------------------------------------
+## spearman plot
+spearman_dfs<-c(descriptives_to_use, control_descriptives_to_use[c(2,3)])
+label_list_spearman<-c(label_list_sigmoid)
+control_label_list_spearman<-label_list_control[c(2,3)]
+
+
+spearman_list<-df_with_size[spearman_dfs]
+
+# replace 0 values in the doses with 0.19
+for(i in c(1:length(spearman_list))){
+  for(k in c(1:nrow(spearman_list[[i]]))){
+    if(spearman_list[[i]][k,4]== 0){
+      spearman_list[[i]][k,4]<-0.19
+    }
+  }
+}
+
+spearman_doses<-unique(spearman_list[[1]][,4])
+
+variances<-vector("list",length(spearman_list))
+
+for(k in c(1:length(spearman_list))){
+  variance<-vector()
+  for(i in spearman_doses){
+    dataframe<-spearman_list[[k]][which(spearman_list[[k]][,4]==i),]
+    var<-cor(dataframe[,3],dataframe[,5], method = "spearman")
+    variance<-c(variance,var)
+    
+  }
+  variances[[k]]<-variance
+}
+
+variances_data<-variances[c(1,2)]
+variances_control<-variances[c(3,4)]
+
+spearman_frames<-list(as.data.frame(cbind(variances_data[[1]],frame_list[[1]][,8])),
+                      as.data.frame(cbind(variances_data[[2]],frame_list[[1]][,8])))
+
+formula_logistic_spearman<-CRS.6(method="1")
+
+drm_model_spearman<-lapply(spearman_frames,drm,fct=formula_logistic_spearman,logDose=NULL)
+plot(drm_model_spearman[[1]], ylim=c(0.60,0.90))
+plot(drm_model_spearman[[2]], ylim=c(0.60,0.90))
+
+
+
+parameters_spearman<-list()
+
+for(i in c(1:length(drm_model_spearman))){
+  parameter<-drm_model_spearman[[i]]$coefficients
+  parameters_spearman[[i]]<-parameter
+  
+}
+
+x_values_spearman<-lseq(0.19,600,length.out = 1000)
+
+spearman_fit<-lapply(parameters_spearman,f_sigmoid_fit_spearman,x_values_spearman)
+
+
+
+spearman_hormesis<-f_spearman_fit_plot(spearman_fit,c("NF","OL"),spearman_frames, variances_control, control_label_list_spearman)
+
+spearman_hormesis 
+
+ggsave(spearman_hormesis,filename =  "ypd_spearman_hormesis.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(spearman_hormesis,filename =  "ypd_spearman_hormesis.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+```
+
+
+
+```{r overlaid plotting function}
+# creating the individual plots
+library("minpack.lm")
+library("ggthemes")
+library("ggplot2")
+## plotting the sigmoid curves.
+xlabel<-expression(paste("aTc [ng/mL]"))
+
+f_plot_sigmoid_curves_overlaid<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, control_frame_list,label_list_control, xlim, ylim,control_doses){
+    formatter<-function(x){x/1000}
+    final_plot<-ggplot() 
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values, y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]), size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,8],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    
+    # plot the controls
+    
+    for(k in c(1:length(control_frame_list))){
+      dose_control<-control_doses[[k]]
+      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
+
+      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+                                             linetype=label_list_control[[k]],colour=
+                                               label_list_sigmoid[[ceiling(k/2)]]))
+      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
+                                              x=x_values))
+
+      #final_plot<-final_plot+single_layer_control
+
+    }
+    
+    
+    
+    pretty_plot<-final_plot +
+     scale_linetype_manual(values=c("longdash","dotdash",
+                                     "longdash","dotdash",
+                                     "longdash","dotdash",
+                                     "longdash","dotdash")) +
+
+     scale_colour_manual(values = colour_palette) +
+     scale_x_continuous(breaks = breaks_x_axis,
+                   labels = labels_x_axis,
+                   limits = xlim
+                   #trans = "log10"
+                   ) +
+     scale_y_continuous(limits = ylim, labels=formatter, breaks=y_breaks_overlaid) +
+      guides(colour=guide_legend(title = "Strains",nrow=4)) +
+      # ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep="")))+
+      theme(panel.grid.minor = element_blank(),
+            legend.position = "none", 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(),
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            )
+    
+    return(pretty_plot)
+  }
+
+```
+
+
+```{r overlaid ethanol, glycerol, proline,sd}
+
+
+library(drc)
+
+list_p1<-list(-0.5,-1,-0.8,-0.8)
+
+list_p2<-list(3,3,3,3)
+
+
+list_formulas<-list()
+
+for(i in c(1:length(list_p1))){
+  formula<- fplogistic(p1=list_p1[[i]],p2=list_p2[[i]])
+  list_formulas[[i]]<-formula
+}
+
+lowerlimits<-list(c(0,0,500,0),
+                  c(0,NA,NA,NA),
+                  c(0,NA,NA,NA),
+                  c(0,NA,NA,NA))
+
+
+f_fit_function<-function(x) (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic function
+
+#------------------------------------------------------------------------------------------------------------------
+
+descriptives_to_use<-c(1,6,11,16)
+control_descriptives_to_use<-c(3,5,8,10,13,15,18,20)
+xlim<-c(0,150)
+ylim<-c(0,50000)
+y_breaks_overlaid<-seq(0,50000, length.out=6)
+dose_control<-c("400","400","200","200","200","200","400","400")
+
+colour_palette<-c("#7a1f1f","#cb3434","#ff3333","#ffcccc")
+
+
+# pick which strains/time_points you want to plot, and their labels
+frame_list<-descriptives[descriptives_to_use]
+label_list_sigmoid<-c("YPeth","SGly","SDpro","SDmin")
+label_list_control<-c("ype_norepressor","ype_70",
+                      "gly_norepressor","gly_70",
+                      "pro_norepressor","pro_70",
+                      "sd_norepressor","sd_70")
+
+control_frame_error<-df_list[control_descriptives_to_use]
+# pick your controls
+control_frame_list<-descriptives[control_descriptives_to_use]
+
+
+
+#define x axis doses and the labels for plotting
+breaks_x_axis<-c(0,20,60,100,150)
+labels_x_axis<- c(0,20,60,100,150)
+
+
+# generate log distributed x values for smoother line fitting. 
+library(emdbook)
+x_values<-seq(0,
+               600,length.out=10000)
+
+strain_list<-label_list_sigmoid
+
+
+new_frame_list<-list()
+
+for(i in c(1:length(frame_list))){
+  new_frame<-frame_list[[i]][c(1,8)]
+  #new_frame[,2]<-log10(new_frame[,2])
+  new_frame_list[[i]]<-new_frame
+} # creates the dataframes that the drm function can take as input (y values in first column, doses/x values in second column)
+
+drm_model<-mapply(drm,data=new_frame_list,fct=list_formulas,lowerl=lowerlimits, 
+                  MoreArgs = list(logDose=NULL), SIMPLIFY = F)
+
+
+
+plot(drm_model[[1]])
+plot(drm_model[[2]])
+plot(drm_model[[3]])
+plot(drm_model[[4]])
+
+
+parameters<-list()
+
+for(i in c(1:length(drm_model))){
+  parameter<-drm_model[[i]]$coefficients
+  parameters[[i]]<-c(parameter, list_p1[[i]], list_p2[[i]])
+  
+}
+
+
+
+fit<-lapply(parameters,f_sigmoid_fit,x_values)
+
+sigmoid_plot_overlaid<-f_plot_sigmoid_curves_overlaid(fit,frame_list, control_frame_list,
+                                    label_list_control, xlim, ylim, dose_control)
+
+
+sigmoid_plot_overlaid 
+
+sigmoid_plot_overlaid_zoom<-sigmoid_plot_overlaid + scale_x_continuous(limits=c(0,50), breaks=c(0,10,30,50))
+
+ggsave(sigmoid_plot_overlaid+ylab(""),filename =  "overlaid.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(sigmoid_plot_overlaid+ylab(""),filename =  "overlaid.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+ggsave(sigmoid_plot_overlaid_zoom+ylab(""),
+       filename =  "overlaid_zoom.jpeg", path=output_path, height=6, width=9.04, units = "cm")
+ggsave(sigmoid_plot_overlaid_zoom+ylab(""),
+       filename =  "overlaid_zoom.pdf", path=output_path, height=6, width=9.04, units = "cm")
+
+#---------------------------------------------------------------------------------------------------
+## derivative plot
+ylims_d<-c(0,11500)
+y_breaks_d<-seq(0,10000,length.out = 6)
+x_values_d<-seq(0,
+               max(frame_list[[1]][,8]),length.out=10000)
+
+sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
+
+
+derivative_plot_overlaid<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_sigmoid, c(1:4))
+
+derivative_plot_overlaid
+
+ggsave(derivative_plot_overlaid+ylab(""),filename =  "overlaid_derivative.jpeg", path=output_path, height=6, width=9.04
+       , units = "cm")
+
+ggsave(derivative_plot_overlaid+ylab(""),filename =  "overlaid_derivative.pdf", path=output_path, height=6, width=9.04
+       , units = "cm")
+
+
+#---------------------------------------------------------------------------------------------------
+## spearman plot
+spearman_dfs<-descriptives_to_use
+label_list_spearman<-label_list_sigmoid
+
+
+spearman_list<-df_with_size[spearman_dfs]
+
+# replace 0 values in the doses with 0.19
+for(i in c(1:length(spearman_list))){
+  for(k in c(1:nrow(spearman_list[[i]]))){
+    if(spearman_list[[i]][k,4]== 0){
+      spearman_list[[i]][k,4]<-0.19
+    }
+  }
+}
+
+spearman_doses_list<-list(unique(spearman_list[[1]][,4]),unique(spearman_list[[2]][,4]),
+                     unique(spearman_list[[3]][,4]),unique(spearman_list[[4]][,4]))
+
+variances<-vector("list",length(spearman_list))
+
+for(k in c(1:length(spearman_list))){
+  variance<-vector()
+  spearman_doses<-spearman_doses_list[[k]]
+  for(i in spearman_doses){
+    dataframe<-spearman_list[[k]][which(spearman_list[[k]][,4]==i),]
+    var<-cor(dataframe[,3],dataframe[,5], method = "spearman")
+    variance<-c(variance,var)
+    
+  }
+  variances[[k]]<-variance
+}
+
+
+
+spearman_frames<-list(as.data.frame(cbind(variances[[1]],spearman_doses_list[[1]])),
+                      as.data.frame(cbind(variances[[2]],spearman_doses_list[[2]])),
+                      as.data.frame(cbind(variances[[3]],spearman_doses_list[[3]])),
+                      as.data.frame(cbind(variances[[4]],spearman_doses_list[[4]]))
+                      )
+
+formula_logistic_spearman<-CRS.6(method="1")
+
+lowerlimits_spearman<-list(c(0,NA,NA,NA,NA,NA),
+                           c(-0.0001,NA,NA,NA,NA,NA),
+                           c(0,NA,NA,NA,NA,NA),
+                           c(NA,0,NA,NA,NA,NA)
+                           )
+
+upperlimits_spearman<-list(c(10,NA,NA,NA,NA,NA),
+                           c(NA,NA,NA,6,NA,NA),
+                           c(10,NA,NA,NA,NA,NA),
+                           c(0,NA,NA,NA,NA,NA)
+                           )
+
+
+drm_model_spearman<-mapply(drm,spearman_frames, 
+                           MoreArgs = list(fct=formula_logistic_spearman,logDose=NULL), SIMPLIFY = F)
+plot(drm_model_spearman[[1]], ylim=c(0.60,0.90))
+plot(drm_model_spearman[[2]], ylim=c(0.60,0.90))
+plot(drm_model_spearman[[3]], ylim=c(0.60,0.90))
+plot(drm_model_spearman[[4]], ylim=c(0.60,0.90))
+
+
+
+parameters_spearman<-list()
+
+for(i in c(1:length(drm_model_spearman))){
+  parameter<-drm_model_spearman[[i]]$coefficients
+  parameters_spearman[[i]]<-parameter
+  
+}
+
+x_values_spearman<-lseq(0.19,200,length.out = 10000)
+
+spearman_fit<-lapply(parameters_spearman,f_sigmoid_fit_spearman,x_values_spearman)
+
+f_spearman_fit_plot<-function(fit,label,data){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(fit))){
+    single_layer<- geom_line(aes_(x=x_values_spearman,y=fit[[i]], colour=label[[i]]), size=1)
+    final_plot<-final_plot+single_layer
+  }
+  
+  for(i in c(1:length(data))){
+    single_layer<-geom_point(aes_(x=data[[i]][,2], y=data[[i]][,1], colour=label[[i]]))
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  
+  pretty_plot<- final_plot +
+   
+    
+    ylab("Spearman Correlation") +
+    scale_colour_manual(values = colour_palette) +
+    scale_linetype_manual(values=c("longdash", "dotdash")) +
+    xlab(xlabel) +
+    scale_x_continuous(breaks = breaks_x_axis_d,
+                    labels = labels_x_axis_d, 
+                    trans = "log10",
+                    limits = c(0.19,200)) +
+    scale_y_continuous(limits=c(0.55,0.9), breaks = c(0.60,0.70,0.80,0.90)) +
+    theme(panel.grid = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1 ),
+            panel.background = element_blank()
+            ) 
+  
+  
+  return(pretty_plot)
+  
+}
+
+spearman_hormesis<-f_spearman_fit_plot(spearman_fit,label_list_spearman,spearman_frames)
+
+spearman_hormesis
+ggsave(spearman_hormesis+ylab(""),filename =  "overlaid_spearman.jpeg", path=output_path,height=6, width=9.04, units = "cm")
+ggsave(spearman_hormesis+ylab(""),filename =  "overlaid_spearman.pdf", path=output_path,height=6, width=9.04, units = "cm")
+
+
+
+
+```
+
+
+
+```{r analysis of glycerol}
+n<-6
+name<-"glycerol.jpeg"
+title<-"Sgly, NF"
+p5<-subset(df_with_size[[n]], df_with_size[[n]][,4]==1)
+p2<-subset(df_with_size[[n]], df_with_size[[n]][,4]==0.2)
+d27<-subset(df_with_size[[n]], df_with_size[[n]][,4]==27)
+d600<-subset(df_with_size[[n]], df_with_size[[n]][,4]==400)
+
+ggplot() +
+  
+  geom_point(aes(x=d600[,5],y=d600[,3], colour="400")) +
+  geom_point(aes(x=p5[,5],y=p5[,3], colour="1"))+
+  geom_point(aes(x=p2[,5],y=p2[,3], colour="0.2")) +
+  geom_point(aes(x=d27[,5],y=d27[,3], colour="27")) +
+  theme_bw() +
+  ggtitle(title) +
+  xlim(90000,140000) +
+  ylim(0,150000) +
+  xlab("Size") +
+  ylab("Fluorescence")
+               
+
+nrow(subset(d600, d600[,5]>100000))/nrow(d600)
+nrow(subset(d27, d27[,5]>100000))/nrow(d27)
+
+
+
+ggsave(name, path = "C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/figure1/glycerol")
+```
+

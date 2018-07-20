@@ -475,6 +475,16 @@ f_ecs<-function(params){
 }
 
 
+f_sigmoid <- function(params, x) {
+  ( params[5] + ((params[1]-params[5]) / ((1 + ((x/params[3])^params[2]))^
+                                            (params[4]))))
+}
+
+f_sigmoid_fit<-function(params,x_values){    
+  sigmoid_fit <- f_sigmoid(params,x_values)
+  print(params)
+  return(sigmoid_fit)
+}
 
 
 #----------------------------------------------------------------------------------------

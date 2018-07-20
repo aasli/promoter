@@ -1,0 +1,157 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r set parameters}
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+
+
+## colour scale
+
+
+# reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
+t0p1_file<-"180427_timeofinduction/t0"
+t1p1_file<-"180427_timeofinduction/30min"
+t2p1_file<-"180427_timeofinduction/1h"
+t3p1_file<-"180427_timeofinduction/90min"
+t4p1_file<-"180427_timeofinduction/150min"
+t5p1_file<-"180427_timeofinduction/210min"
+t6p1_file<-"180427_timeofinduction/4h"
+t7p1_file<-"180427_timeofinduction/6h"
+t7p2_file<-"180427_timeofinduction/t0/controls"
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/time_of_induction" # for saving plots
+xlabel<-expression(paste("aTc[ng/mL]", sep = "")) 
+
+starting_well<-1
+wells_per_sample<-3
+
+experiment_doses<- c("1","2","3")
+
+
+columns_to_include<-c(2,5,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+strain_names<-c("2674","2759","2663","2669",
+                "2675","2676","2717","2689",
+                "2688","2664","2665","2666",
+                "2667")
+  
+  # c("2674","2674","2674","2759","2759","2759","2663","2663","2663","2669","2669","2669",
+  #               "2675","2675","2675","2676","2676","2676","2717","2717","2717","2689","2689","2689",
+  #               "2688","2688","2688","2664","2664","2664","2665","2665","2665","2666","2666","2666",
+  #               "2667","2667","2667")
+
+control_strain_names<-c("70","70","70","2661","2661","2661","2683","2683","2683")
+
+
+time_points<-c("0min","30min","60min","90min","150min","210min","240min","360min")
+
+label_list<- c("7op final, only NF",
+               "7op final, NF+rnr2_tup1", 
+               "7op final, pAct1_TetR",
+               "7op final, pAct1_TetR-TUP1",
+               "7op final, pVph1_TetR",
+               "7op final, pVph1_TetR-TUP1",
+               "7op final, pRNR2_TetR-TUP1",
+               "7op final, pAct1_TetR-TUP1C425",
+               "7op final, pVph1_TetR-TUP1C425",
+               "7op final, pAct1_TetR-GST",
+               "7op final, pAct1_TetR-GST-2xNLS",
+               "7op final, pAct1_TetR-MBP",
+               "7op final, pAct1_TetR-MBP-2xNLS"
+               )
+label_list_control<-c(
+               
+               "no repressor",
+               "pTDH3_citrine",
+               "fry70")
+
+names(label_list)<-strain_names
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+```
+
+
+
+
+```{r}
+
+library(reshape2)
+dfs_to_melt<-df_list[c(1,2,14,15,27,28,40,41,53,54,66,67,79,80,92,93)]
+time_point_list<-c(0,0,30,30,60,60,90,90,150,150,210,210,240,240,360,360)
+strain_list<-c(1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2)
+
+for(i in c(1:length(dfs_to_melt))){
+  
+  df<-dfs_to_melt[[i]]
+  time_point<-time_point_list[i]
+  strain<-strain_list[[i]]
+  df<-cbind(df[,3],rep(time_point,nrow(df)),rep(strain,nrow(df)))
+  colnames(df)<-c("488 [C]-H","time_point","strain")
+  dfs_to_melt[[i]]<-as.data.frame(df)
+  
+}
+
+
+figure_dfs<-melt(dfs_to_melt, measure.var=1)
+figure_dfs<-droplevels(figure_dfs)
+figure_dfs[,1]<-as.factor(figure_dfs[,1])
+figure_dfs[,2]<-as.numeric(figure_dfs[,2])
+
+
+#scales::seq_gradient_pal("lightblue", "darkblue", "Lab")(seq(0,1,length.out=11))
+
+ggplot(figure_dfs) +
+    
+    geom_density(aes(x=value,colour=time_point)) +
+    
+    facet_wrap(~strain, ncol=1,strip.position = "right") +
+    theme(legend.position = c(0.2,0.8)) +
+    guides(colour=guide_legend(ncol = 2, title="")) +
+    theme_bw() +
+    scale_x_log10(limits=c(100,200000)) +
+    scale_colour_manual(values = c("#ADD8E6", #1
+                                   "#A1C2DD", #2
+                                   "#95ACD4", #3
+                                   "#8997CB", #4
+                                  # "#7C82C2", #5
+                                   "#6E6DB9", #6
+                                   "#6059B0", #7
+                                   "#5145A7", #8
+                                   #"#3F309E", #9
+                                   "#291B94" #10
+                                  # "#00008B"  #11
+                                   ))
+  #  ylim(0,0.0005)
+
+
+
+```
+
