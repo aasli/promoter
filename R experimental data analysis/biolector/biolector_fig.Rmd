@@ -1,0 +1,196 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+## this is a script to read and plot biolector data. 
+require(ggplot2)
+
+```
+
+
+```{r}
+
+well_groups<- list(c("A01","B01","C01"),c("D01","E01","F01"),
+                   c("A02","B02","C02"),c("D02","E02","F02"),
+                   c("A03","B03","C03"),c("D03","E03","F03"),
+                   c("A04","B04","C04"),c("D04","E04","F04"),
+                   c("A05","B05","C05"),c("D05","E05","F05"),
+                   c("A06","B06","C06"),c("D06","E06","F06"),
+                   c("A07","B07","C07"),c("D07","E07","F07"),
+                   c("A08","B08","C08"),c("D08","E08","F08")
+                   ) # each group corresponds to triplicates of one condition, one strain, one inducer concentration.
+
+strains<- c("fry70","fry2761") # in the order they are on the plate
+conditions<- c("ype","proline","sd","ypd") # in the order they are on the plate
+inducer<-c("600","0") # in the order they are on the plate
+
+
+name_list<-c()
+  
+for(l in c(1:length(conditions))){
+ for(i in c(1:length(strains))){
+  for(k in c(1:length(inducer))){
+    name<-paste(conditions[l], strains[i], inducer[k], sep="_")
+    name_list<-c(name_list,name)
+  }
+ }
+}
+
+
+name_list
+
+```
+
+```{r}
+data<-read.csv("180511_finalsystem.csv") # first open the csv file in excel, remove all the biolector-related rows such that the first row is the titles of the columns.
+
+colnames(data)<-c("reading","well","content","description","filter","time","amplitude","phase",
+                  "amplitude2","temperature","humidity","O2","CO2","comments") # this comes from how the biolector saves the data in the csv. 
+
+data1<-subset(data,data$filter==1) 
+data2<-subset(data,data$filter==2)
+data3<-subset(data,data$filter==3)
+
+data_to_use<-data2 # pick which filter you want to use. 
+
+
+
+f_subsetting<-function(data,wells){
+  # function to subset the whole csv into groups of wells.
+  
+  subset<-subset(data,
+            data$well %in% wells)
+  
+  return(as.data.frame(subset))
+} 
+
+df_list<-lapply(well_groups, f_subsetting, data=data_to_use) # creates a list of dataframes, each dataframe corresponds to one condition, one strain, one inducer concentration.
+
+names(df_list)<-name_list # name the dataframes in the list- just for convenience. 
+
+
+```
+
+```{r}
+
+f_offset_yaxis<-function(data){
+  # this function subtracts the minimum y-axis value in each curve from all the values in that curve. 
+  # it is useful to align all the curves in the y axis. Sometimes they are misaligned because they start with slightly different numbers of cells. 
+  # needs to be "lapply"d to the df_list
+  
+  wells<-unique(data$well)  
+  
+  min_list<-c()
+  final_df<-data[1,]
+  
+  for (i in wells){
+    subset<-subset(data, data$well==i & data$time > 4) # this line discards the first 4 hours of measurements when doing the offsetting, since these are usually unreliable. 
+    min<- min(subset$amplitude)
+    offset<-as.vector(subset$amplitude)-min
+    subset$amplitude<-offset
+    
+    final_df<-rbind(final_df,subset)
+  }
+
+  final_df<-final_df[-1,]
+  
+  return(final_df)
+  
+}
+
+y_offset_df_list<-lapply(df_list,f_offset_yaxis)
+
+```
+
+
+```{r}
+
+
+f_plot<-function(df, xlims, ylims, offset1, offset2, offset3, offset4){
+  # plots the biolector curves. 
+  # offset 1-2-3-4 refer to how much you want to move each curve towards 0 (i.e. left) on the plot. This is sometimes necessary to align the exponential phases of the curves. The misalignment might have happened due to different numbers of cells at the beginning. 
+  # this function is a bit hard coded, but can easily be modified to fit the curves you want to plot. 
+  # df refers to a list of dataframes, xlims sets the x limits, ylim sets the ylimits. 
+
+  
+final_plot<- ggplot() +
+  geom_line(aes(x=(df[[1]]$time-offset1), y=df[[1]]$amplitude, fill=df[[1]]$well,
+            colour="parent", linetype="+ aTc")) + 
+  geom_line(aes(x=(df[[2]]$time-offset2), y=df[[2]]$amplitude, fill=df[[2]]$well,
+            colour="parent", linetype="- aTc")) +
+  geom_line(aes(x=(df[[3]]$time-offset3), y=df[[3]]$amplitude, fill=df[[3]]$well,
+            colour="TNF", linetype="+ aTc")) +
+  geom_line(aes(x=(df[[4]]$time-offset4), y=df[[4]]$amplitude,fill=df[[4]]$well,
+            colour="TNF", linetype="- aTc")) +
+  
+  theme_bw() +
+  xlab("Time (h)") +
+  ylab("Amplitude (a.u.)") +
+
+  scale_colour_manual(values = c("TNF"="darkred",
+                                 "parent"="grey50")) +
+  scale_linetype_manual(values = c("- aTc" ="dashed",
+                                 "+ aTc" = "solid")) +
+  
+  scale_x_continuous(limits=xlims, breaks = round(seq(xlims[1], xlims[2], length.out = 5))) + 
+  scale_y_continuous(limits=ylims, breaks = round(seq(ylims[1], ylims[2], length.out = 5))) +  
+  theme(panel.grid = element_blank(),
+            #legend.direction = "horizontal",
+            legend.position = "none", 
+            legend.title = element_blank(),
+            legend.key.height = unit(0.5,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+
+
+return(final_plot)
+
+}
+
+
+colour_control<-"grey50"
+colour_system<-"darkred"
+line_0<-1
+line_600<-2
+
+ypethanol<-f_plot(y_offset_df_list[c(1:4)], c(0,80), c(0,300), 26.5, 32.5, 20, 20)
+
+proline<-f_plot(y_offset_df_list[c(5:8)], c(0,80), c(0,50), 10, 10, 10, 10)
+
+sd<-f_plot(y_offset_df_list[c(9:12)], c(0,80), c(0,90), 12, 12, 13.10, 12)
+
+ypd<-f_plot(y_offset_df_list[c(13:16)], c(0,80), c(0,400), 7.2, 7, 7, 7)
+```
+
+```{r}
+
+f_save<-function(plot, filename, ext){
+  # save the plot to a desired folder (see path below)
+  # ext refers to the file type. Can be jpg, pdf, svg etc etc. 
+  
+  plot
+  
+  ggsave(plot, filename = paste(filename, ext, sep = ""), 
+         path = "C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/biolector", 
+         width = 9.04, height = 6, units = "cm")
+  
+}
+
+filenames<-c("ypethanol", "proline", "sd", "ypd")
+plots<-list(ypethanol, proline, sd, ypd)
+
+mapply(f_save, plots, filenames, SIMPLIFY = FALSE, MoreArgs = list(".jpeg")) 
+mapply(f_save, plots, filenames, SIMPLIFY = FALSE, MoreArgs = list(".pdf"))
+```
+

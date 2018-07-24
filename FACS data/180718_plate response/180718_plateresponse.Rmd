@@ -1,0 +1,363 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r set parameters}
+
+
+## plate response with YPD and MSG plates.
+
+
+source("common_functions.R")
+source("stat_functions.R")
+source("plotting_functions.R")
+
+
+
+## colour scale
+## colour scale
+plot_palette<-c(
+"0"="#867236",
+"0.5"="#ccccb0",
+"1"="#6343c6",
+"3"="#addf42",
+"5"="#bf4dd6",
+"8"="#63d654",
+"12"="#d148a3",
+"15"="#d7ca3b",
+"17"="#6e74cc",
+"21"="#5c8f38",
+"23"="#77397a",
+"25"="#74dc9e",
+"30"="#cf466b",
+"35"="#76d5d7",
+"40"="#de4e34",
+"50"="#8cadd1",
+"60"="#d6913d",
+"75"="#4b5e7d",
+"100"="#cad17b",
+"150"="#d292c6",
+"200"="#435738",
+"300"="#98432a",
+"400"="#5b957b",
+"600"="#7c4a51",
+
+"fry70"="black",
+"no repressor"="black",
+"tdh3"="blue")
+
+
+
+# reading fcs files, t0p1 is the folder for timepoint 0, plate 1 etc.
+t0p1_file<-"180718_plateresponse/ypd"
+t0p2_file<-"180718_plateresponse/sd"
+
+
+pattern_read<-"Specimen_001"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/july18/180718_plateresponse/" # for saving plots
+xlabel<-expression(paste("aTc [ng/mL]", sep = "")) 
+
+starting_well<-1
+wells_per_sample<-24
+
+experiment_doses_ypd<- c(0,50,100,500,750,1000,3000,5000,10000,30000)
+
+experiment_doses_sd<- c(0,50,100,500,750,1000,3000,5000,10000)
+
+
+columns_to_include<-c(2,5,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+strain_names<-c("2759_ypd","70_ypd","2759_sd","70_sd") 
+time_points<-c("2d")
+
+label_list<- c("system_ypd",
+               "fry70_ypd",
+               "system_d",
+               "fry70_sd"
+               )
+
+names(label_list)<-strain_names
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-300000 #the value for subsetting based on FSC-W/H
+limit_sscw <-250000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-25000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-list(experiment_doses_ypd,experiment_doses_ypd,experiment_doses_sd,experiment_doses_sd)
+cols_descriptives<-3
+
+
+#---------------------------------------------------------------------------------------------------------------
+## smoothed dose response curves of the strains you want
+
+descriptive_sequence<-c(1,2,3,4) #pick the strains at given timepoints
+label_list_smooth<-label_list
+timepoint_used<-1
+number_of_timepoints<-1
+ncol_legend_smooth<-2
+statistic_to_use<-2 #1 is median, 2 is mean
+scale_x_breaks_smooth<-experiment_doses_ypd
+scale_x_labels_smooth<-experiment_doses_ypd
+legend_title_smooth<-"Strain"
+plot_title_smooth<-"Dose Response Curves"
+xlab_smooth<-xlabel
+ylab_smooth<-"Fluorescence (a.u.)"
+legend_direction_smooth<-"vertical"
+legend_position_smooth<-c(0.8,0.2)
+additional_arguments_smooth<-NULL
+time_point_smooth<-"h" # to be used in the filename when saving the plot.
+
+height_smooth<-10 # the height and width of the plot to be saved
+width_smooth<-15
+#---------------------------------------------------------------------------------------------------------------
+
+## size plots
+fscw_column_size<-1
+sscw_column_size<-2
+xlab_size<-"FSC-W"
+ylab_size<-"SSC-W"
+ylimits_size<-c(0000,NA)
+xlimits_size<-c(0000,NA)
+
+labels_for_grid_size<-time_points # labels for the plots in the 2x2 grid
+
+height_size<-10 # saving dimensions
+width_size<-15
+
+#---------------------------------------------------------------------------------------------------------------
+
+
+```
+
+
+```{r histograms}
+source("facs_script.R")
+library("ggplot2")
+
+f_histogram<-function(dataframe, label, xlim, ylim){
+  
+  final_plot<-ggplot() 
+  
+    single_layer<-geom_density(aes_(x=dataframe[,3], colour=as.factor(dataframe[,4])), size=1)
+    final_plot<-final_plot+single_layer
+  
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    xlab("Fluorescence (a.u.)") +
+    ylab("Density") +
+    xlim(xlim) +
+    ggtitle(label)+
+    ylim(ylim) +
+    guides(colour=guide_legend(title="aTc [ng/uL]"))
+  
+  return(pretty_plot)
+  
+}
+
+xlims<-list(c(0,60000),c(0,1000),
+            c(0,60000),c(0,1000))
+
+ylims<-list(c(0,0.0003), c(0,0.004),
+            c(0,0.0003), c(0,0.004))
+
+histograms<-mapply(f_histogram,df_list,label_list,xlims, ylims, SIMPLIFY = F)
+
+mapply(f_save,histograms,label_list,MoreArgs = list(output_folder=output_path,output_path="histograms",
+                                                    height=10,width=15))
+```
+
+
+
+```{r sigmoid plot}
+## sigmoid curve fitting
+
+## plotting
+
+
+f_sigmoid <- function(params, x) {
+  
+  b<-params[[1]]
+  c<-params[[2]]
+  d<-params[[3]]
+  e<-params[[4]]
+  p1<-params[[5]]
+  p2<-params[[6]]
+  
+  (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic
+}
+
+
+f_sigmoid_fit<-function(params,x_values){  
+   print(params)
+  sigmoid_fit <- f_sigmoid(params,x_values)
+ 
+  return(sigmoid_fit)
+}
+
+
+## plotting the sigmoid curves.
+
+f_plot_sigmoid_curves<-
+  # plot the fitted line and the individual data points. 
+  function(fit_list,frame_list, label_list_sigmoid){
+   formatter<-function(x){x/1000}
+    
+    final_plot<-ggplot() 
+    
+    
+    # plot the lines
+    for (i in c(1:length(fit_list))){
+      single_layer_line<- geom_line(aes_(x=x_values[[i]], y=fit_list[[i]],
+                                         colour=label_list_sigmoid[[i]]),size=1)
+      final_plot<-final_plot+single_layer_line
+    }
+    
+    # plot the individual data points
+    for (j in c(1:length(frame_list))){
+      single_layer_point<- geom_point(aes_(x=frame_list[[j]][,2],y=frame_list[[j]][,1],
+                                           colour=label_list_sigmoid[[j]]))   
+      final_plot<-final_plot+single_layer_point
+    }
+    
+    # plot the zero timepoint
+    #descriptives[[1]][1,8]<-0.19
+    
+    
+    pretty_plot<-final_plot +
+      scale_colour_manual(values=c("YPD"="darkblue", "MSG"="darkred")) +
+      scale_x_continuous(breaks = breaks_sigmoid,
+                    labels = labels_x_axis,
+                    trans = "log10",
+                    limits=c(1,NA)) +
+      guides(colour=guide_legend(title = "", ncol=2)) +
+      #scale_y_log10() +
+      #ggtitle(plot_title) +
+      xlab(xlabel) +
+      ylab("Fluorescence (a.u.)") +
+      ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+      theme(panel.grid = element_blank(),
+            legend.position = c(0.2,0.8), 
+            legend.direction = "horizontal",
+            #legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.15,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) +
+     scale_y_continuous(limits = c(0,40000), breaks=c(0,10000,20000,30000,40000),labels=formatter)
+    
+    return(pretty_plot)
+  }
+
+
+
+
+```
+
+```{r remove background}
+#since aTc accumulates in cells, the fry70 fluorescence for each dose was removed from the system measurement
+
+f_background_correction<-function(measurement_frame,control_frame) {
+  
+  for(i in c(1:nrow(measurement_frame))){
+    background<-control_frame[i,1]
+    if(measurement_frame[i,1]-background >= 0){
+    measurement_frame[i,1]<-measurement_frame[i,1]-background
+    }else
+      measurement_frame[i,1]<-0
+    
+  }
+  
+  
+    measurement_frame<-as.data.frame(cbind(measurement_frame[,1],measurement_frame[,8]))
+  
+  return(measurement_frame)
+}
+
+descriptives_background_corrected<-mapply(f_background_correction,descriptives[c(1,3)],descriptives[c(2,4)],
+                                          SIMPLIFY = F)
+
+```
+
+
+```{r sigmoid fit}
+library(drc)
+
+list_p1<-list(-0.5,-0.8)
+list_p2<-list(1,1.3)
+
+list_formulas<-list()
+
+for(i in c(1:length(list_p1))){
+  formula<- fplogistic(p1=list_p1[[i]],p2=list_p2[[i]])
+  list_formulas[[i]]<-formula
+}
+
+f_fit_function<-function(x) (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p2)))) #fplogistic function
+
+#--------------------------------------------------------------------------------------------------
+
+
+drm_model<-mapply(drm,data=descriptives_background_corrected,fct=list_formulas,
+                  MoreArgs = list(logDose=NULL, upperl=c(NA,0,NA,NA)), SIMPLIFY = F) # the lower bound for the second 
+
+plot(drm_model[[1]])
+plot(drm_model[[2]])
+
+
+x_values<-list(c(0,lseq(min(0.000001),
+               max(descriptives_background_corrected[[1]][,2]),10000)),
+               c(0,lseq(min(0.000001),
+               max(descriptives_background_corrected[[2]][,2]),10000)))
+
+
+breaks_sigmoid<-c(1,100,1000,10000)
+labels_x_axis<-c(0,100,1000,10000)
+
+
+parameters<-list()
+
+for(i in c(1:length(drm_model))){
+  parameter<-drm_model[[i]]$coefficients
+  parameters[[i]]<-c(parameter, list_p1[[i]], list_p2[[i]])
+  
+}
+
+for(i in c(1:length(descriptives_background_corrected))){
+  descriptives_background_corrected[[i]][1,2]<-1
+}
+
+sigmoid_fit_descriptives<-mapply(f_sigmoid_fit,parameters,x_values, SIMPLIFY = F)
+
+# plot the fitted lines and the individual data points
+sigmoid_plot<-f_plot_sigmoid_curves(sigmoid_fit_descriptives,descriptives_background_corrected, c("YPD","MSG"))
+
+sigmoid_plot
+
+f_save(sigmoid_plot,"sigmoid.jpeg",output_folder=output_path,output_path="",height=10,width=15)
+ggsave(plot=sigmoid_plot,"plate_response.pdf",path=output_path,height=10,width=15)
+```
+

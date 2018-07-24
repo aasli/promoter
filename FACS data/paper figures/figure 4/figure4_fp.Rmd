@@ -591,3 +591,67 @@ ggplot() +
 
 ```
 
+
+
+```{r fluorescence vs size plots}
+
+high_color<-"black"
+low_color<-"grey80"
+mid_color<-"grey60"
+
+f_size_vs_fluorescence<-function(dataframe, doses){
+  
+  final_plot<-ggplot() 
+  
+  for(i in doses){
+    dataframe_subset<-subset(dataframe,dataframe[,4]==i)
+    
+    single_layer<-geom_density2d(aes_(x=dataframe_subset[,5],y=dataframe_subset[,3], colour=as.character(i)))
+    
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    ylab("Fluorescence (a.u)") +
+    xlab("Size") +
+    guides(colour=guide_legend(title="")) +
+    scale_colour_manual(values = c("0"="grey80",
+                                   "5"="grey60",
+                                   "23"="grey50",
+                                   "60"="grey40",
+                                   "200"="grey20",
+                                   "600"="black"
+                                   )) +
+    theme(panel.grid = element_blank(),
+            legend.position = "top", 
+            legend.direction = "horizontal",
+            #legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.15,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+  return(pretty_plot)
+  
+}
+
+
+
+f_vs_size_plots<-lapply(df_with_size[c(1,descriptives_to_use_sigmoid)],f_size_vs_fluorescence, c(0,5,23,60,200,600))
+
+
+mapply(f_save, f_vs_size_plots, names(df_list)[c(1,descriptives_to_use_sigmoid)], 
+       MoreArgs = list(output_path,"f_vs_size", 6, 9.04) ,SIMPLIFY = F)
+
+
+```
+
