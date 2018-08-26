@@ -558,13 +558,6 @@ f_save_pdf(spearman,paste("spearman.pdf",time_point_sigmoid,sep = "_"),
 
 
 
-
-
-
-
-
-
-
 ```{r visualizing the fp fits}
 bd<-2
 cd<-500
@@ -606,7 +599,7 @@ f_size_vs_fluorescence<-function(dataframe, doses){
   for(i in doses){
     dataframe_subset<-subset(dataframe,dataframe[,4]==i)
     
-    single_layer<-geom_density2d(aes_(x=dataframe_subset[,5],y=dataframe_subset[,3], colour=as.character(i)))
+    single_layer<-geom_density2d(aes_(x=dataframe_subset[,5],y=dataframe_subset[,3], colour=(i)))
     
     final_plot<-final_plot+single_layer
     
@@ -614,7 +607,7 @@ f_size_vs_fluorescence<-function(dataframe, doses){
   
   pretty_plot<-final_plot+
     theme_bw() +
-    ylab("Fluorescence (a.u)") +
+    ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
     xlab("Size") +
     guides(colour=guide_legend(title="")) +
     scale_colour_manual(values = c("0"="grey80",
@@ -624,6 +617,8 @@ f_size_vs_fluorescence<-function(dataframe, doses){
                                    "200"="grey20",
                                    "600"="black"
                                    )) +
+    scale_y_log10(limits=c(100,92000), breaks=c(1000,10000,50000), labels=c(1,10,50)) +
+    scale_x_continuous(limits=c(90000,120000)) +
     theme(panel.grid = element_blank(),
             legend.position = "top", 
             legend.direction = "horizontal",
@@ -646,11 +641,22 @@ f_size_vs_fluorescence<-function(dataframe, doses){
 
 
 
-f_vs_size_plots<-lapply(df_with_size[c(1,descriptives_to_use_sigmoid)],f_size_vs_fluorescence, c(0,5,23,60,200,600))
-
+f_vs_size_plots<-lapply(df_with_size[c(1,descriptives_to_use_sigmoid)],f_size_vs_fluorescence,c(0,5,23,60,600) )
+f_vs_size_plots[[11]]
 
 mapply(f_save, f_vs_size_plots, names(df_list)[c(1,descriptives_to_use_sigmoid)], 
-       MoreArgs = list(output_path,"f_vs_size", 6, 9.04) ,SIMPLIFY = F)
+       MoreArgs = list(output_path,"f_vs_size/ypd", 6, 9.04) ,SIMPLIFY = F) 
+
+mapply(f_save_pdf, f_vs_size_plots, names(df_list)[c(1,descriptives_to_use_sigmoid)], 
+       MoreArgs = list(output_path,"f_vs_size/ypd", 6, 9.04) ,SIMPLIFY = F) 
+  
+
+
+```
+
+```{r fold change}
+
+descriptives[[41]][24,1]/descriptives[[41]][1,1]
 
 
 ```

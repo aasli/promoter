@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+
+library(ggplot2)
+source("common_functions.R")
+source("stat_functions.R")
+
+t0p1_file<-"180731_washnarrest/arrestee"
+t0p2_file<-"180731_washnarrest/atc"
+t0p3_file<-"180731_washnarrest/parent"
+t0p4_file<-"180731_washnarrest/control"
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/july18/180731_wash&arrest" # for saving plots
+pattern_read<-""
+
+starting_well<-1
+
+
+columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+ 
+#time_points<-c("0min","30min","60min","90min","120min","150min","180min","210min","240min","270min","300min","330min","21h")
+time_points<-c(60,120,210,300,360,1260)
+
+label_list<- c("tor2_t60",
+               "tor2_t120",
+               "tor2_t210",
+               "tor2_t300",
+               "tor2_t360",
+               "tor2_t21h",
+               
+               "tor2atc_t0",
+               "tor2atc_t360",
+               "tor2atc_t21h",
+               
+               "parent_t330",
+               "parent_t21h",
+               
+               "parent_Nstarved",
+               "diploid_exponential"
+               )
+
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+
+dose_descriptives<-experiment_doses
+cols_descriptives<-3
+
+
+
+```
+
+
+```{r}
+
+
+f_time_lapse_plot<-function(dataframe){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_density(aes_(x=dataframe[,3])) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    xlab("Fluorescence (a.u.)") +
+    xlim(0,100000) +
+    ylim(0,0.00005)
+  
+  return(final_plot)
+  
+}
+
+time_lapse_plots<-lapply(df_list,f_time_lapse_plot)
+
+time_lapse_plots
+
+mapply(f_save,time_lapse_plots,names(df_list),
+       MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+
+```
+

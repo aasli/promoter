@@ -2,31 +2,7 @@
 
 # generate summary statistics from a dataframe
 
-
-# generate summary statistics from a dataframe
-
-f_descriptives_media<-function(data_frame,dose_descriptives,column){
-  final_data_frame<-data.frame()
-  data_frame<-as.data.frame(data_frame)
-  for (i in dose_descriptives){
-    temporary<-data.frame()
-    m1_median<-median(data_frame[which(data_frame$"Dose"==i),column])
-    m2_mean<-mean(data_frame[which(data_frame$"Dose"==i),column])
-    qunatile1<- as.numeric(quantile(data_frame[which(data_frame$"Dose"==i),column])[2])
-    qunatile3<- as.numeric(quantile(data_frame[which(data_frame$"Dose"==i),column])[4])
-    standard_dev<- sd(data_frame[which(data_frame$"Dose"==i),column])
-    coef_of_dist<-(qunatile3-qunatile1)/m1_median
-    coef_of_variation<-(standard_dev/m2_mean)
-    temporary<-cbind(m1_median,m2_mean,qunatile1,qunatile3,standard_dev,coef_of_dist,
-                     coef_of_variation,i)
-    final_data_frame<-rbind(final_data_frame,temporary)
-  }
-  return(final_data_frame)
-}
-
-
-
-f_descriptives<-function(data_frame,dose_descriptives,column){
+f_descriptives<-function(data_frame,column){
   final_data_frame<-data.frame()
   data_frame<-as.data.frame(data_frame)
   for (i in dose_descriptives){

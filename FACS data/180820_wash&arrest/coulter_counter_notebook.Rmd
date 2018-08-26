@@ -1,0 +1,41 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(reshape2)
+library(ggplot2)
+
+setwd("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/180820_wash&arrest/180818")
+tor2_t21h<-as.data.frame(read.csv("2772_0_tfinal.csv"))
+tor2atc_t21h<-as.data.frame(read.csv("2772_30_tfinal.csv"))
+parent_t21h<-as.data.frame(read.csv("2769_tfinal.csv"))
+tor2_t54h<-as.data.frame(read.csv("2772_0_t54h.csv"))
+tor2atc_t54h<-as.data.frame(read.csv("2772_30_t54h.csv"))
+blank<-as.data.frame(read.csv("blank.csv"))
+
+df_list<-list(tor2_t21h, tor2atc_t21h, tor2_t54h, tor2atc_t54h, parent_t21h, blank)
+names(df_list)<-c("tor2_t21h", "tor2atc_t21h", "tor2_t54h", "tor2atc_t54h", "parent_t21h", "blank")
+melted_list<-melt(df_list,  id=c(colnames(tor2_t21h)))
+
+head(melted_list)
+```
+
+```{r}
+
+f_plot<-function(list, title){
+  
+final_plot<-ggplot() +
+  geom_histogram( stat="identity", aes(x=list[,1],y=list[,2])) +                
+  ylim(0,750) +
+  theme_bw() +
+  ggtitle(title)
+
+return(final_plot)
+  
+}
+
+mapply(f_plot, df_list, names(df_list), SIMPLIFY = F)
+```
+

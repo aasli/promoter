@@ -562,6 +562,97 @@ ggsave(spearman_hormesis,filename =  "ypd_spearman_hormesis.pdf", path=output_pa
 
 
 
+```{r fluorescence vs size plots}
+
+high_color<-"black"
+low_color<-"grey80"
+mid_color<-"grey60"
+
+f_size_vs_fluorescence<-function(dataframe, doses){
+  # 
+  # final_plot<-ggplot() 
+  # 
+  # for(i in doses){
+  #   dataframe_subset<-subset(dataframe,dataframe[,4]==i)
+  #   
+  #   single_layer<-geom_density2d(aes_(x=dataframe_subset[,5],y=dataframe_subset[,3], colour=as.character(i)))
+  #   
+  #   final_plot<-final_plot+single_layer
+  #   
+  # }
+  
+  dataframe_subset<-subset(dataframe,dataframe[,1] %in% doses)
+  
+   final_plot<-ggplot(dataframe_subset) +
+     
+    geom_density2d(aes_(x=dataframe_subset[,2],y=dataframe_subset[,4], colour=as.character(dataframe_subset[,1]))) +
+     
+     facet_wrap(~dataframe_subset$L1)
+
+   
+
+  
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+    xlab(expression(paste("Size x","10"^"3","(a.u.)",sep=""))) +
+    guides(colour=guide_legend(title=xlabel), ncol=1) +
+    scale_colour_manual(values = c("0"="grey80",
+                                   "3"="grey60",
+                                   "8"="grey50",
+                                   "21"="grey50",
+                                   "00"="grey40",
+                                   "150"="grey20",
+                                   "200"="black"
+                                   )) +
+    scale_y_log10(limits=c(1000,85000), breaks=c(2000,10000,50000), labels=c(2,10,50)) +
+    scale_x_continuous(limits=c(90000,120000), breaks=c(95000,105000,115000), labels=c(95,105,115)) +
+    
+    theme(panel.grid = element_blank(),
+            legend.position = c(0.05,0.9), 
+            legend.direction = "vertical",
+            #legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.15,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+  return(pretty_plot)
+  
+}
+
+
+
+frames_to_plot<-df_with_size[descriptives_to_use]
+colnames(frames_to_plot[[1]])[5]<-"size"
+colnames(frames_to_plot[[2]])[5]<-"size"
+names(frames_to_plot)<-c("NF","OL")
+melt_frames_to_plot<-melt(frames_to_plot, id.vars=c( "Dose", "size"))
+melt_frames_to_plot_subset<-subset(melt_frames_to_plot, melt_frames_to_plot[,3]=="488 [C]-H")
+
+f_vs_size_plots<-f_size_vs_fluorescence(melt_frames_to_plot_subset,c(0,8,200))
+f_vs_size_plots
+
+# mapply(f_save, f_vs_size_plots, names(df_list)[c(descriptives_to_use)], 
+#        MoreArgs = list(output_path,"f_vs_size/ypd", 6, 9.04) ,SIMPLIFY = F)
+
+f_save(f_vs_size_plots, "comparison",output_path,"f_vs_size/ypd", 6, 9.04)
+ggsave(plot=f_vs_size_plots, filename = "comparison.pdf",path=paste(output_path, "/f_vs_size/ypd", sep = ""),
+       height=6, width=9.04)
+
+
+```
+
+
+
 ```{r overlaid plotting function}
 # creating the individual plots
 library("minpack.lm")
@@ -593,17 +684,24 @@ f_plot_sigmoid_curves_overlaid<-
     # plot the controls
     
     for(k in c(1:length(control_frame_list))){
+      
       dose_control<-control_doses[[k]]
-      frame<-control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),]
-
-      single_layer_control<- geom_hline(aes_(yintercept=frame[,1],
+      
+      dataframe<-as.vector(control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),])
+      
+      print(dataframe)
+      
+      print(label_list_control[[k]])
+      print(label_list_sigmoid[[ceiling(k/2)]])
+       
+      single_layer_control<- geom_hline(aes_(yintercept=dataframe[[1]],
                                              linetype=label_list_control[[k]],colour=
                                                label_list_sigmoid[[ceiling(k/2)]]))
-      ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
-                                              ymax=frame[,1]-(frame[,6]*frame[,1]),
-                                              x=x_values))
+      # ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+      #                                         ymax=frame[,1]-(frame[,6]*frame[,1]),
+      #                                         x=x_values))
 
-      #final_plot<-final_plot+single_layer_control
+      final_plot<-final_plot+single_layer_control
 
     }
     

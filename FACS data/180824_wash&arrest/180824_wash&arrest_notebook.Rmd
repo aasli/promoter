@@ -1,0 +1,171 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+
+library(ggplot2)
+source("common_functions.R")
+source("stat_functions.R")
+
+t0p1_file<-"180824_washnarrest/2773_measure"
+t0p2_file<-"180824_washnarrest/2773_atc"
+t0p3_file<-"180824_washnarrest/2788_measure"
+t0p4_file<-"180824_washnarrest/2788_atc"
+t0p5_file<-"180824_washnarrest/parent"
+t0p6_file<-"180824_washnarrest/controls"
+t0p7_file<-"180824_washnarrest/rad53"
+t0p8_file<-"180824_washnarrest/glycerol"
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/180824_wash&arrest" # for saving plots
+pattern_read<-""
+
+starting_well<-1
+
+
+columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+label_list<- c("tor2_t0",
+               "tor2_t90",
+               "tor2_t180",
+               "tor2_t270",
+               "tor2_t360",
+               "tor2_t21h",
+               
+               "tor260atc_t0",
+               "tor260atc_t360",
+               "tor260atc_t21h",
+  
+  
+               "cdc42_t0",
+               "cdc42_t90",
+               "cdc42_t180",
+               "cdc42_t270",
+               "cdc42_t360",
+               "cdc42_t21h",
+               
+               "cdc42atc100_t0",
+               "cdc42atc50_t360",
+               "cdc42atc50_t21h",
+               
+               "parent_t0",
+               "parent_t360",
+               "parent_t21h",
+               
+               
+               "diploid_exponential",
+               "parent_Nstarved"
+               )
+
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+
+
+
+```
+
+
+```{r}
+
+
+f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_histogram(aes_(x=dataframe[,3]), binwidth = 100) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("Fluorescence (a.u.)") +
+    scale_x_continuous(limits=(xlims))+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+}
+
+ylims<-list(c(0,200),c(0,250),c(0,300),c(0,100),c(0,200))
+xlims<-list(c(10,75000),c(10,75000),c(10,100000),c(10,100000),c(10,100000))
+titles<-list("cdc28, - aTc", "cdc28, + aTc",  "parent", "diploid strain","parent (N starved)")
+time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, ylims, xlims, SIMPLIFY = F)
+
+time_lapse_plots
+
+ mapply(f_save,time_lapse_plots,names(df_list),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+
+
+
+```
+
+```{r}
+f_ssc_vs_fsc_plot<-
+  function(dataframe, title){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_density2d(aes_(x=dataframe[,1], y=dataframe[,2])) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("FSC-W") +
+    ylab("sSC-W") +
+    xlim(60000,80000)+
+    ylim(60000,80000)
+  # +
+  #   scale_x_continuous(limits=(xlims))+
+  #   ylim(ylims)
+  
+  return(final_plot)
+  
+}
+size_plots<-mapply(f_ssc_vs_fsc_plot, df_list, titles, SIMPLIFY = F)
+
+size_plots
+
+mapply(f_save,size_plots,names(df_list),
+         MoreArgs = list(paste(output_path, "/size",sep=""), "", 10, 15), SIMPLIFY = F)
+
+
+```
+
+
+```{r}
+
+ggplot(df_list[[1]]) +
+  geom_density2d(aes(x=df_list[[1]][,1], y=df_list[[1]][,3])) +
+  facet_wrap(~df_list[[1]][,4])
+
+
+ggplot(df_list[[2]]) +
+  geom_density2d(aes(x=df_list[[2]][,1], y=df_list[[2]][,3])) +
+  facet_wrap(~df_list[[2]][,4])
+
+
+
+n<-2
+ggplot(df_with_size[[n]]) +
+  geom_density_2d(aes(df_with_size[[n]][,5], df_with_size[[n]][,3])) +
+  facet_wrap(~df_with_size[[n]][,4])
+
+
+```
+

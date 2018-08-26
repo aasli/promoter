@@ -5,7 +5,7 @@
 library(flowCore)
 
 f_read<-function(working_directory, pattern){
-working_directory<-paste("C:/repos/promoter/FACS data/paper figures/",
+working_directory<-paste("C:/Users/aslia/Desktop/pisi/ETH/master project/FACS data/",
                          working_directory,sep="")
 setwd(working_directory)
 flowset<-read.flowSet(pattern=pattern)
@@ -28,36 +28,15 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns,length_
     dose<-doses[[which(k==c(i:(i+wells_per_sample-1)))]]
     dose_column<-as.data.frame(rep(dose,nrow(sample)))
     sample<-cbind(sample,dose_column)
-    colnames(sample)[4]<-"Dose"
+    colnames(sample)[4]<-"Time Point"
     
     strain<-rbind(strain,sample)
     }
     
     index<-which(i==seq(starting_well,length(flowset),wells_per_sample))
     df_list[[index]]<-strain
-    
-    
-    
+  
   }
-  
-  
-  # for(m in c(85:90)){
-  #   
-  #   if((m %% 2) == 0) {
-  #     dose<-0
-  #   } else {
-  #     dose<-400
-  #   }
-  #   print(m)
-  #   
-  #   sample<-as.data.frame(flowset[[m]]@exprs[,columns])
-  #   dose_column<-as.data.frame(rep(dose,nrow(sample)))
-  #   sample<-cbind(sample,dose_column)
-  #   colnames(sample)[4]<-"Dose"
-  #   
-  #   df_list[[m]]<-sample
-  # }
-  # 
   return(df_list)
 }
 
@@ -115,13 +94,6 @@ f_size_subset<-function(data_frame,columns,col_fscw,limit_fscw,col_sscw,limit_ss
 f_save<-function(plot,plot_name,output_folder,output_path, height,width){
   
   ggsave(paste(plot_name,".jpeg",sep=""),plot,path=
-           paste(output_folder,"/",output_path,sep = ""), height=height,
-         width=width, units = "cm")
-  
-}
-f_save_pdf<-function(plot,plot_name,output_folder,output_path, height,width){
-  
-  ggsave(paste(plot_name,".pdf",sep=""),plot,path=
            paste(output_folder,"/",output_path,sep = ""), height=height,
          width=width, units = "cm")
   

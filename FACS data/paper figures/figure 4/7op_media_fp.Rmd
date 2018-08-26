@@ -334,6 +334,8 @@ f_spearman_fit_plot<-function(fit,label,data){
 
 ```{r overlaid ethanol, glycerol, proline,sd}
 
+library(drc)
+
 list_p1<-list(-0.8,-0.8,-0.8,-0.8)
 
 list_p2<-list(3,3,3,3)
@@ -562,30 +564,120 @@ ggsave(spearman+ylab(""),filename =  "overlaid_spearman.pdf", path=output_path,h
 
 
 
-```{r}
 
-number<-9
-dose<-4
-a<-subset(df_with_size[[number]],df_with_size[[number]][,dose]==600)
-b<-subset(df_with_size[[number]],df_with_size[[number]][,dose]==150)
-c<-subset(df_with_size[[number]],df_with_size[[number]][,dose]==60)
-d<-subset(df_with_size[[number]],df_with_size[[number]][,dose]==5)
-e<-subset(df_with_size[[number]],df_with_size[[number]][,dose]==0.5)
+```{r fluorescence vs size plots}
+
+high_color<-"black"
+low_color<-"grey80"
+mid_color<-"grey60"
+
+f_size_vs_fluorescence<-function(dataframe, doses, limits_x, breaks_x, limits_y){
+  formatter<-function(x){x/1000}
+  
+  final_plot<-ggplot() 
+  
+  for(i in doses){
+    dataframe_subset<-subset(dataframe,dataframe[,4]==i)
+    
+    single_layer<-geom_density2d(aes_(x=dataframe_subset[,5],y=dataframe_subset[,3], colour=as.character(i)))
+    
+    final_plot<-final_plot+single_layer
+    
+  }
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+    xlab("Size") +
+    guides(colour=guide_legend(title="")) +
+    scale_colour_manual(values = c("0"="grey80",
+                                   "5"="grey60",
+                                   "1"="grey60",
+                                   "23"="grey50",
+                                   "25"="grey50",
+                                   "4"="grey50",
+                                   "3"="grey50",
+                                   "60"="grey40",
+                                   "8"="grey40",
+                                   "10"="grey40",
+                                   "100"="grey20",
+                                   "15"="grey20",
+                                   "30"="grey20",
+                                   "200"="black",
+                                   "20"="black"
+                                   )) +
+    scale_y_log10(limits=limits_y, breaks=c(1000,10000,100000), labels=c(1,10,100)) +
+    scale_x_continuous(limits=limits_x, breaks=breaks_x, labels=formatter) +
+    theme(panel.grid = element_blank(),
+            legend.position = "top", 
+            legend.direction = "horizontal",
+            #legend.title = element_blank(),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.15,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(), 
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            ) 
+  
+  return(pretty_plot)
+  
+}
 
 
-size<-5
-flu<-3
-ggplot() +
-  geom_point(aes(x=a[,size],y=a[,flu]), colour="red") +
-  geom_point(aes(x=b[,size],y=b[,flu]), colour="blue") +
-  geom_point(aes(x=c[,size],y=c[,flu]), colour="purple") +
-  geom_point(aes(x=d[,size],y=d[,flu]), colour="orange") +
-  geom_point(aes(x=e[,size],y=e[,flu])) +
-  scale_x_log10()
+f_vs_size_doses<-list(c(0,5,23,200),
+                      c(0,1,4,10,30,200),
+                      c(0,1,3,8,20),
+                      c(0,1,5,23,200)
+                      )
+
+limits_y_f_vs_size_plot<- list(c(100,100000),
+                               c(100,100000),
+                               c(50,100000),
+                               c(100,100000))
+
+limits_f_vs_size_plot<-list(c(90000,120000),
+                            c(90000,120000),
+                            c(90000,160000),
+                            c(90000,120000))
+
+breaks_f_vs_size_plot<-list(c(90000,100000,110000,120000),
+                            c(90000,100000,110000,120000),
+                            c(90000,100000,110000,120000, 130000, 140000, 150000, 160000),
+                            c(90000,100000,110000,120000))
+
+f_vs_size_plots<-mapply(f_size_vs_fluorescence, df_with_size[descriptives_to_use],f_vs_size_doses,
+                        limits_f_vs_size_plot, breaks_f_vs_size_plot, limits_y_f_vs_size_plot,
+                        SIMPLIFY = F)
+
+f_vs_size_plots 
 
 
-ggplot() +
-  geom_point(aes(x=a[,1],y=a[,2]))
+mapply(f_save, f_vs_size_plots, names(df_list)[descriptives_to_use], 
+       MoreArgs = list(output_path,"f_vs_size/media", 6, 9.04) ,SIMPLIFY = F)
+
+
+```
+
+```{r analysis of uninduced population, proline}
+
+list_percentage<-c()
+for(i in c(proline_doses)){
+  
+plot_this<-subset(df_with_size[[9]], df_with_size[[9]][,4]==i)
+
+uninduced<-subset(plot_this,plot_this[,3]<1000)  
+percentage<-nrow(uninduced)*100/nrow(plot_this)
+
+list_percentage[[which(i==proline_doses)]]<-percentage
+}
+
+list_percentage
+proline_doses
 
 ```
 

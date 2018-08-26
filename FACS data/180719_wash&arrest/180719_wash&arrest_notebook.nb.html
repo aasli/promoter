@@ -174,13 +174,60 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZmlsZS5leGlzdHMocGFzdGUoXCJDOi9Vc2Vycy9hc2xpYS9EZXNrdG9wL3Bpc2kvRVRIL21hc3RlciBwcm9qZWN0L0ZBQ1MgZGF0YS9cIixcbiAgICAgICAgICAgICAgICAgICAgICAgICBcIjE4MDcxOV93YXNobmFycmVzdC9jb250cm9scy9jb250cm9sc1wiLHNlcD1cIlwiKSlcblxuYGBgIn0= -->
-<pre class="r"><code>file.exists(paste(&quot;C:/Users/aslia/Desktop/pisi/ETH/master project/FACS data/&quot;,
-                         &quot;180719_washnarrest/controls/controls&quot;,sep=&quot;&quot;))
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShnZ3Bsb3QyKVxuc291cmNlKFwiY29tbW9uX2Z1bmN0aW9ucy5SXCIpXG5gYGAifQ== -->
+<pre class="r"><code>library(ggplot2)
+source(&quot;common_functions.R&quot;)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
-<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoicGFja2FnZSDjpLzjuLFyZXNoYXBlMuOkvOO4siB3YXMgYnVpbHQgdW5kZXIgUiB2ZXJzaW9uIDMuNC4xXG4ifQ== -->
+<pre><code>package &lt;U+393C&gt;&lt;U+3E31&gt;reshape2&lt;U+393C&gt;&lt;U+3E32&gt; was built under R version 3.4.1</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudDBwMV9maWxlPC1cIjE4MDcxOV93YXNobmFycmVzdC9tZWFzdXJlbWVudFwiXG50MHAyX2ZpbGU8LVwiMTgwNzE5X3dhc2huYXJyZXN0L2NvbnRyb2xzXCJcbnQwcDNfZmlsZTwtXCIxODA3MTlfd2FzaG5hcnJlc3QvY29udHJvbHNfc2luZ2xlXCJcbm91dHB1dF9wYXRoPC1cIkM6L1VzZXJzL2FzbGlhL0Rlc2t0b3AvcGlzaS9FVEgvbWFzdGVyIHByb2plY3QvbGFiYm9vay9wbG90cy9qdWx5MTgvMTgwNzE5X3dhc2gmYXJyZXN0XCIgIyBmb3Igc2F2aW5nIHBsb3RzXG5wYXR0ZXJuX3JlYWQ8LVwiXCJcbnN0YXJ0aW5nX3dlbGw8LTFcbmNvbHVtbnNfdG9faW5jbHVkZTwtYygzLDYsNykgIzE9RlNDLUEsICMyPUZTQy1ILCAjMz1GU0MtVywgIzQ9U1NDLUEsICM1PVNTQy1ILCAjNj1TU0MtVywgIzc9IDQ4OCBbQ10tSFxuIFxuI3RpbWVfcG9pbnRzPC1jKFwiMG1pblwiLFwiMzBtaW5cIixcIjYwbWluXCIsXCI5MG1pblwiLFwiMTIwbWluXCIsXCIxNTBtaW5cIixcIjE4MG1pblwiLFwiMjEwbWluXCIsXCIyNDBtaW5cIixcIjI3MG1pblwiLFwiMzAwbWluXCIsXCIzMzBtaW5cIixcIjIxaFwiKVxudGltZV9wb2ludHM8LWMoMCwzMCw2MCw5MCwxMjAsMTUwLDE4MCwyMTAsMjQwLDI3MCwzMDAsMzMwLDEyNjApXG5sYWJlbF9saXN0PC0gYyhcInRvcjJfdDBcIixcbiAgICAgICAgICAgICAgIFwidG9yMl90MzBcIixcbiAgICAgICAgICAgICAgIFwidG9yMl90NjBcIixcbiAgICAgICAgICAgICAgIFwidG9yMl90MTIwXCIsXG4gICAgICAgICAgICAgICBcInRvcjJfdDE1MFwiLFxuICAgICAgICAgICAgICAgXCJ0b3IyX3QxODBcIixcbiAgICAgICAgICAgICAgIFwidG9yMl90MjEwXCIsXG4gICAgICAgICAgICAgICBcInRvcjJfdDI0MFwiLFxuICAgICAgICAgICAgICAgXCJ0b3IyX3QyNzBcIixcbiAgICAgICAgICAgICAgIFwidG9yMl90MzAwXCIsXG4gICAgICAgICAgICAgICBcInRvcjJfdDIxaFwiLCBcbiAgICAgICAgICAgICAgIFwicGFyZW50X3QwXCIsXG4gICAgICAgICAgICAgICBcInBhcmVudF90MzMwXCIsXG4gICAgICAgICAgICAgICBcInBhcmVudF90MjFoXCIsXG4gICAgICAgICAgICAgICBcInRvcjJhdGNfdDBcIixcbiAgICAgICAgICAgICAgIFwidG9yMmF0Y190MzMwXCIsXG4gICAgICAgICAgICAgICBcInRvcjJhdGNfdDIxaFwiLFxuICAgICAgICAgICAgICAgXCJwYXJlbnRfTnN0YXJ2ZWRcIixcbiAgICAgICAgICAgICAgIFwiZGlwbG9pZF9leHBvbmVudGlhbFwiXG4gICAgICAgICAgICAgICApXG4jLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4jIyBwaWNrIHRoZSB2YWx1ZXMgdG8gc3Vic2V0IHRoZSBkYXRhIHdpdGguIFxuY29sdW1ucyA8LWMoMTo0KSAjY29sdW1ucyB0byBiZSBpbmNsdWRlZCBpbiB0aGUgc3Vic2V0XG5jb2xfZnNjdyA8LSAxICNjb2x1bW4gb2YgRlNDLVcvSFxuY29sX3NzY3cgPC0gMiAjY29sdW1uIG9mIFNTQy1XL0hcbmxpbWl0X2ZzY3cgPC05MDAwMCAjdGhlIHZhbHVlIGZvciBzdWJzZXR0aW5nIGJhc2VkIG9uIEZTQy1XL0hcbmxpbWl0X3NzY3cgPC05MDAwMCAjdGhlIHZhbHVlIGZvciBzdWJzZXR0aW5nIGJhc2VkIG9uIFNTQy1XL0hcbmxvd2VyX2xpbWl0X2ZzY3cgPC0wMDAgI3RoZSB2YWx1ZSBmb3Igc3Vic2V0dGluZyBiYXNlZCBvbiBGU0MtVy9ILCBsb3dlciBsaW1pdFxubG93ZXJfbGltaXRfc3NjdyA8LTAwMDAgI3RoZSB2YWx1ZSBmb3Igc3Vic2V0dGluZyBiYXNlZCBvbiBTU0MtVy9ILCBsb3dlciBsaW1pdFxuc2l6ZV9zdWJzZXQ8LUZBTFNFICMgc2V0IHRvIFRSVUUgaWYgeW91IHdhbnQgdG8gdXNlIHNpemVfc3Vic2V0dGVkIGRhdGEsIG90aGVyd2lzZSBmYWxzZS5cbiMtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiMjIGRlc2NyaXB0aXZlIHN0YXRpc3RpY3NcbmRvc2VfZGVzY3JpcHRpdmVzPC1leHBlcmltZW50X2Rvc2VzXG5gYGAifQ== -->
+<pre class="r"><code>t0p1_file&lt;-&quot;180719_washnarrest/measurement&quot;
+t0p2_file&lt;-&quot;180719_washnarrest/controls&quot;
+t0p3_file&lt;-&quot;180719_washnarrest/controls_single&quot;
+output_path&lt;-&quot;C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/july18/180719_wash&amp;arrest&quot; # for saving plots
+pattern_read&lt;-&quot;&quot;
+starting_well&lt;-1
+columns_to_include&lt;-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+ 
+#time_points&lt;-c(&quot;0min&quot;,&quot;30min&quot;,&quot;60min&quot;,&quot;90min&quot;,&quot;120min&quot;,&quot;150min&quot;,&quot;180min&quot;,&quot;210min&quot;,&quot;240min&quot;,&quot;270min&quot;,&quot;300min&quot;,&quot;330min&quot;,&quot;21h&quot;)
+time_points&lt;-c(0,30,60,90,120,150,180,210,240,270,300,330,1260)
+label_list&lt;- c(&quot;tor2_t0&quot;,
+               &quot;tor2_t30&quot;,
+               &quot;tor2_t60&quot;,
+               &quot;tor2_t120&quot;,
+               &quot;tor2_t150&quot;,
+               &quot;tor2_t180&quot;,
+               &quot;tor2_t210&quot;,
+               &quot;tor2_t240&quot;,
+               &quot;tor2_t270&quot;,
+               &quot;tor2_t300&quot;,
+               &quot;tor2_t21h&quot;, 
+               &quot;parent_t0&quot;,
+               &quot;parent_t330&quot;,
+               &quot;parent_t21h&quot;,
+               &quot;tor2atc_t0&quot;,
+               &quot;tor2atc_t330&quot;,
+               &quot;tor2atc_t21h&quot;,
+               &quot;parent_Nstarved&quot;,
+               &quot;diploid_exponential&quot;
+               )
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+columns &lt;-c(1:4) #columns to be included in the subset
+col_fscw &lt;- 1 #column of FSC-W/H
+col_sscw &lt;- 2 #column of SSC-W/H
+limit_fscw &lt;-90000 #the value for subsetting based on FSC-W/H
+limit_sscw &lt;-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw &lt;-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw &lt;-0000 #the value for subsetting based on SSC-W/H, lower limit
+size_subset&lt;-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+#---------------------------------------------------------------------------------------------------------------
+## descriptive statistics
+dose_descriptives&lt;-experiment_doses</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3I6IG9iamVjdCAnZXhwZXJpbWVudF9kb3Nlcycgbm90IGZvdW5kXG4ifQ== -->
+<pre><code>Error: object 'experiment_doses' not found</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
