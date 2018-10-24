@@ -1,0 +1,186 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r set parameters}
+
+
+library(ggplot2)
+library(reshape2)
+
+wds<-list("180828_characterizations/2772",
+          "180828_characterizations/2773",
+          "180828_characterizations/2776",
+          "180828_characterizations/2788",
+          "180828_characterizations/2788",
+          "180828_characterizations/cia2f10",
+          "180828_characterizations/ipl1d1",
+          "180828_characterizations/pbr1g10",
+          "180828_characterizations/whi5a9",
+          "180828_wash&arrest/2775",
+          )
+
+output_paths<-list("180828_characterizations/2772",
+                   "180828_characterizations/2773",
+                   "180828_characterizations/2776",
+                   "180828_characterizations/2788",
+                   "180828_characterizations/2788/big",
+                   "180828_characterizations/cia2f10",
+                   "180828_characterizations/ipl1d1",
+                   "180828_characterizations/pbr1g10",
+                   "180828_characterizations/whi5a9",
+                   "180828_wash&arrest/2775",
+                   )
+
+
+csv_files<-list("2772_overlayy.csv",
+                "2773_overlay.csv",
+                "2776_overlay.csv",
+                "2788_overlay.csv",
+                "2788_big_overlay.csv",
+                "cia2_overlay.csv",
+                "ipl1d1_overlay.csv",
+                "pbr1_overlay.csv",
+                "whi5_overlay.csv",
+                "overlay_21h.csv"
+                )
+
+titles<-list("2772_tor2",
+          "2773_tor2",
+          "2776_cdc20",
+          "2788_cdc42",
+          "2788_cdc42_big",
+          "cia2_f10",
+          "ipl1_d1",
+          "pbr1_g10",
+          "whi5_a9",
+          "2775_21h"
+          )
+
+parent_status<-list(T,T,T,T,
+                    F,T,T,T,
+                    T)
+
+```
+
+```{r}
+
+
+f_generate_plots<-function(wd, output_path, csv_file,  title, parent){
+  print(wd)
+
+
+setwd(paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/",
+      wd, sep=""))
+
+output_path<-
+  paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/",output_path, sep="")
+
+data<-as.data.frame(read.csv(csv_file, header = F))
+
+setwd("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/180828_characterizations")
+parent_frame<-as.data.frame(read.csv("2769.csv", header = F))
+
+
+if(parent==T){
+  doses<-c(0,10,100,20,200,5,50,600,"parent")
+  data<-cbind(data,parent_frame)
+}else{
+    doses<-c(0,10,100,20,200,5,50,600)
+  }
+
+
+# 
+# colnames(data)<-c("bin number", "bin diameter", 
+#                   "0", "0", "0", 
+#                   "10", "10", "10", 
+#                   "100", "100", "100",
+#                   "20","20","20",
+#                   "200","200","200",
+#                   "5", "5", "5", 
+#                   "50", "50")
+
+
+
+colour_palette<-c(
+"#efbe76",
+"#ed6ff3",
+"#40cd51",
+"#ba0046",
+"#006b42",
+"#ff7078",
+"#cb9c00",
+"#9b3f00",
+"black")
+
+
+# r diameter to volume conversion}
+f_diameter_to_volume<-function(x){
+  ((x/2)^3) * pi * (4/3)
+}
+
+
+data_volume<-cbind(data[,1],f_diameter_to_volume(data[,2]), data[,c(3:ncol(data))])
+
+
+
+
+f_plot_overlay<-function(dataframe, cols, title, ylabel, xlabel, labels, xlims){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(cols))){
+    column<-cols[[i]]
+    single_layer<-geom_freqpoly(stat = "identity",
+                                 aes_(x=dataframe[,2], y=dataframe[,column], colour=as.factor(labels[[i]])))
+    
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<- final_plot+
+    theme_bw() +
+    ggtitle(title) +
+    ylab(ylabel) +
+    xlab(xlabel) +
+    xlim(xlims) +
+    guides(colour=guide_legend(title="aTc[ng/mL]")) +
+    scale_colour_manual(values = colour_palette)
+  
+  return(pretty_plot)
+  
+}
+
+if(parent==T){
+  cols_plot<-c(4, 7, 10, 13, 16, 19, 22, 24, 27)
+}else{
+    cols_plot<-c(4, 7, 10, 13, 16, 19, 22, 24)
+  }
+
+overlay_diameter<-f_plot_overlay(data, cols_plot, 
+                                 title, "Cells per mL", "Diameter (um)", doses, c(1.9,6.1))
+overlay_volume<-f_plot_overlay(data_volume, cols_plot, 
+                               title, "Cells per mL", "Volume (fL)", doses, c(0,NA))
+
+overlay_diameter
+overlay_volume
+
+ggsave(overlay_diameter, path=output_path, filename=paste(title, "diameter.jpeg", sep=""),
+       height=10, width=15, units="cm")
+ggsave(overlay_volume, path=output_path, filename=paste(title, "volume.jpeg", sep=""),
+       height=10, width=15, units="cm")
+
+
+
+}
+
+```
+
+```{r}
+
+
+mapply(f_generate_plots,wds, output_paths, csv_files, titles, parent_status, SIMPLIFY = F )
+
+
+```
+

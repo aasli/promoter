@@ -1,0 +1,250 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r set parameters}
+
+
+library(ggplot2)
+library(reshape2)
+
+
+wds<-list("180828_wash&arrest/2775",
+          "180828_wash&arrest/2775",
+          "180828_wash&arrest/2775",
+          "180828_wash&arrest/2775",
+          "180828_wash&arrest/2775",
+          "180828_wash&arrest/2775",
+          "180828_wash&arrest/2775"
+          )
+
+output_paths<-list("180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775",
+                   "180828_wash&arrest/2775"
+                   )
+
+
+csv_files<-list(
+                "overlay_t60.csv",
+                "overlay_t120.csv",
+                "overlay_t180.csv",
+                "overlay_t240.csv",
+                "overlay_t300.csv",
+                "overlay_t360.csv",
+                "overlay_21h.csv"
+                )
+
+titles<-list(
+             "2775_t60",
+             "2775_t120",
+             "2775_t180",
+             "2775_t240",
+             "2775_t300",
+             "2775_t360",
+             "2775_21h"
+          )
+
+
+
+parent_status<-list(F,F,F,F,F,T,T)
+
+parent_timepoints<-list(21,21,21,21,21,360,21)
+
+colour_palette<-c(
+"#efbe76",
+"#ed6ff3",
+"#40cd51",
+"#ba0046",
+"#006b42",
+"#ff7078",
+"#cb9c00",
+"#9b3f00",
+"black")
+
+```
+
+```{r}
+
+
+f_generate_plots<-function(wd, output_path, csv_file,  title, parent, parent_timepoint){
+  print(wd)
+
+
+setwd(paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/",
+      wd, sep=""))
+
+output_path<-
+  paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/",output_path, sep="")
+
+data<-as.data.frame(read.csv(csv_file, header = F))
+
+if(parent_timepoint==21){
+setwd("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/180828_wash&arrest")
+parent_frame<-as.data.frame(read.csv("2769_21h.csv", header = F))
+}
+if(parent_timepoint==360){
+setwd("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/180828_wash&arrest")
+parent_frame<-as.data.frame(read.csv("2769_360min.csv", header = F))
+}
+
+
+if(parent==T){
+  doses<-c(0,10,100,20,200,5,50,600,"parent")
+  data<-cbind(data,parent_frame)
+}else{
+    doses<-c(0,10,100,20,200,5,50,600)
+  }
+
+
+
+
+
+# r diameter to volume conversion}
+f_diameter_to_volume<-function(x){
+  ((x/2)^3) * pi * (4/3)
+}
+
+
+data_volume<-cbind(data[,1],f_diameter_to_volume(data[,2]), data[,c(3:ncol(data))])
+
+
+
+
+f_plot_overlay<-function(dataframe, cols, title, ylabel, xlabel, labels, xlims){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(cols))){
+    column<-cols[[i]]
+    single_layer<-geom_freqpoly(stat = "identity",
+                                 aes_(x=dataframe[,2], y=dataframe[,column], colour=as.factor(labels[[i]])))
+    
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<- final_plot+
+    theme_bw() +
+    ggtitle(title) +
+    ylab(ylabel) +
+    xlab(xlabel) +
+    xlim(xlims) +
+    guides(colour=guide_legend(title="aTc[ng/mL]")) +
+    scale_colour_manual(values = colour_palette)
+  
+  return(pretty_plot)
+  
+}
+
+if(parent==T){
+  cols_plot<-c(4, 7, 10, 13, 16, 19, 22, 24, 27)
+}else{
+    cols_plot<-c(4, 7, 10, 13, 16, 19, 22, 24)
+  }
+
+overlay_diameter<-f_plot_overlay(data, cols_plot, 
+                                 title, "Cells per mL", "Diameter (um)", doses, c(1.9,6.1))
+overlay_volume<-f_plot_overlay(data_volume, cols_plot, 
+                               title, "Cells per mL", "Volume (fL)", doses, c(0,NA))
+
+overlay_diameter
+overlay_volume
+
+ggsave(overlay_diameter, path=output_path, filename=paste(title, "diameter.jpeg", sep=""),
+       height=10, width=15, units="cm")
+ggsave(overlay_volume, path=output_path, filename=paste(title, "volume.jpeg", sep=""),
+       height=10, width=15, units="cm")
+
+
+
+# calculate cell numbers
+yeast_cells<-subset(data,data[,2]>2.75)
+
+cell_numbers<-c()
+
+for(i in cols_plot){
+  cells_per_mL<-sum(yeast_cells[,i], na.rm = T)
+  cell_numbers<-c(cell_numbers,cells_per_mL)
+  
+}
+
+names(cell_numbers)<-doses
+
+return(cell_numbers)
+}
+
+```
+
+```{r}
+
+
+cell_numbers<-mapply(f_generate_plots,wds, output_paths, csv_files, titles, parent_status, parent_timepoints, SIMPLIFY = F )
+
+for(i in c(1:5)){
+  numbers<-c(cell_numbers[[i]],0)
+  cell_numbers[[i]]<-numbers
+}
+
+cell_numbers_frame<-(as.data.frame(do.call("rbind", cell_numbers)))
+cell_numbers_frame[[10]]<-c(60,120,180,240,300,360,500)
+colnames(cell_numbers_frame)[c(9:10)]<-c("parent","time_point")
+
+f_cell_number_plot<-function(dataframe){
+  
+  final_plot<-ggplot() 
+  
+  for(i in c(1:(ncol(dataframe)-1))){
+    single_layer<-geom_point(aes_(x=dataframe[,10], y=dataframe[,i], colour=colnames(dataframe)[i]))
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<-final_plot+
+    theme_bw() +
+    scale_color_manual(values=colour_palette) +
+    xlab("Time (min)") +
+    ylab("Cells per mL") +
+    scale_y_log10() +
+    guides(colour=guide_legend(title="aTc [ng/mL]")) +
+    scale_x_continuous(breaks = c(0,60,120,180,240,300,360,500), labels = c(0,60,120,180,240,300,360,2160))
+
+  
+  return(pretty_plot)
+}
+
+cell_number_plot<-f_cell_number_plot(cell_numbers_frame)
+
+ggsave(cell_number_plot,
+       path=paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/",output_paths[[1]], sep=""),
+       filename = "cell_number_plots.jpeg", height = 10, width = 15, units="cm")
+
+```
+
+
+
+```{r}
+
+
+
+f_doubling_time<-function(vector){
+  
+  ratios<-c()
+  
+  for(i in c(2:length(vector))){
+    ratio<-vector[i]/vector[i-1]
+    
+    ratios<-c(ratios,ratio)
+    
+  }
+  
+  return(ratios)
+  
+}
+
+(apply(cell_numbers_frame[c(1:6),c(1:8)],2,f_doubling_time))
+
+```
+

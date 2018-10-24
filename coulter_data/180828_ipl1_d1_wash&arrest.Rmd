@@ -1,0 +1,146 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r set parameters}
+
+
+library(ggplot2)
+library(reshape2)
+
+
+wds<-list("180828_wash&arrest/ipl1_d1",
+          "180828_wash&arrest/ipl1_d1"
+          )
+
+output_paths<-list("180828_wash&arrest/ipl1_d1",
+                   "180828_wash&arrest/ipl1_d1"
+                   )
+
+
+csv_files<-list(
+                "overlay_t360.csv",
+                "overlay_21h.csv"
+                )
+
+titles<-list("2775_t360",
+             "2775_21h"
+          )
+
+
+colour_palette<-c(
+"#efbe76",
+"#ed6ff3",
+"#40cd51",
+"#ba0046",
+"#006b42",
+"#ff7078",
+"#cb9c00",
+"#9b3f00",
+"black")
+
+```
+
+```{r}
+
+
+f_generate_plots<-function(wd, output_path, csv_file,  title){
+  print(wd)
+
+
+setwd(paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/coulter_counter/august18/",
+      wd, sep=""))
+
+output_path<-
+  paste("C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/",output_path, sep="")
+
+data<-as.data.frame(read.csv(csv_file, header = F))
+
+
+doses<-c("parent", 0, 30)
+
+
+
+
+
+
+# r diameter to volume conversion}
+f_diameter_to_volume<-function(x){
+  ((x/2)^3) * pi * (4/3)
+}
+
+
+data_volume<-cbind(data[,1],f_diameter_to_volume(data[,2]), data[,c(3:ncol(data))])
+
+
+
+
+f_plot_overlay<-function(dataframe, cols, title, ylabel, xlabel, labels, xlims){
+  
+  final_plot<-ggplot()
+  
+  for(i in c(1:length(cols))){
+    column<-cols[[i]]
+    single_layer<-geom_freqpoly(stat = "identity",
+                                 aes_(x=dataframe[,2], y=dataframe[,column], colour=as.factor(labels[[i]])))
+    
+    final_plot<-final_plot+single_layer
+  }
+  
+  pretty_plot<- final_plot+
+    theme_bw() +
+    ggtitle(title) +
+    ylab(ylabel) +
+    xlab(xlabel) +
+    xlim(xlims) +
+    guides(colour=guide_legend(title="aTc[ng/mL]")) +
+    scale_colour_manual(values = colour_palette)
+  
+  return(pretty_plot)
+  
+}
+
+
+  cols_plot<-c(4, 7, 10)
+
+overlay_diameter<-f_plot_overlay(data, cols_plot, 
+                                 title, "Cells per mL", "Diameter (um)", doses, c(1.9,6.1))
+overlay_volume<-f_plot_overlay(data_volume, cols_plot, 
+                               title, "Cells per mL", "Volume (fL)", doses, c(0,NA))
+
+overlay_diameter
+overlay_volume
+
+ggsave(overlay_diameter, path=output_path, filename=paste(title, "diameter.jpeg", sep=""),
+       height=10, width=15, units="cm")
+ggsave(overlay_volume, path=output_path, filename=paste(title, "volume.jpeg", sep=""),
+       height=10, width=15, units="cm")
+
+
+
+# calculate cell numbers
+yeast_cells<-subset(data,data[,2]>2.75)
+
+cell_numbers<-c()
+
+for(i in cols_plot){
+  cells_per_mL<-sum(yeast_cells[,i], na.rm = T)
+  cell_numbers<-c(cell_numbers,cells_per_mL)
+  
+}
+
+names(cell_numbers)<-doses
+
+return(cell_numbers)
+}
+
+```
+
+
+```{r}
+
+mapply(f_generate_plots,wds, output_paths, csv_files, titles,  SIMPLIFY = F )
+
+```
+

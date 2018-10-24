@@ -10,16 +10,11 @@ library(ggplot2)
 source("common_functions.R")
 source("stat_functions.R")
 
-t0p1_file<-"180824_washnarrest/2773_measure"
-t0p2_file<-"180824_washnarrest/2773_atc"
-t0p3_file<-"180824_washnarrest/2788_measure"
-t0p4_file<-"180824_washnarrest/2788_atc"
-t0p5_file<-"180824_washnarrest/parent"
-t0p6_file<-"180824_washnarrest/controls"
-t0p7_file<-"180824_washnarrest/rad53"
-t0p8_file<-"180824_washnarrest/glycerol"
+t0p1_file<-"IPL1_checks/181016"
+t0p2_file<-"IPL1_checks/181017"
+t0p3_file<-"IPL1_checks/181018"
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/180824_wash&arrest" # for saving plots
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/oct18/IPL1_checks" # for saving plots
 pattern_read<-""
 
 starting_well<-1
@@ -28,45 +23,17 @@ starting_well<-1
 columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
 
 
-label_list<- c("tor2_t0",
-               "tor2_t90",
-               "tor2_t180",
-               "tor2_t270",
-               "tor2_t360",
-               "tor2_t21h",
+label_list<- c(
+               "parent",
+               "IPL1",
+               "parent",
+               "IPL1_10atc",
+               "parent",
+               "IPL1_5atc",
+               "IPL1_30atc",
+               "IPL1_60atc",
+               "IPL1_100atc"
                
-               "tor260atc_t0",
-               "tor260atc_t360",
-               "tor260atc_t21h",
-  
-  
-               "cdc42_t0",
-               "cdc42_t90",
-               "cdc42_t180",
-               "cdc42_t270",
-               "cdc42_t360",
-               "cdc42_t21h",
-               
-               "cdc42atc100_t0",
-               "cdc42atc50_t360",
-               "cdc42atc50_t21h",
-               
-               "parent_t0",
-               "parent_t360",
-               "parent_t21h",
-               
-               
-               "diploid_exponential",
-               "parent_Nstarved", 
-               
-               "rad53_0",
-               "rad53_5",
-               "rad53_10",
-               "rad53_20",
-               "rad53_50",
-               "rad53_100",
-               "rad53_200",
-               "rad53_600"
                )
 
 
@@ -109,9 +76,10 @@ f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
   
 }
 
-ylims<-list(c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,125),c(0,125))
-xlims<-list(c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,50000))
-titles<-list("tor2(bK), - aTc", "tor2(bK), + aTc","cdc42, -aTc","cdc42, +aTc" ,"parent", "diploid strain","parent (N starved)", "rad53", "final system, glycerol")
+ylims<-list(c(0,125),c(0,200),c(0,100))
+xlims<-list(c(0,50000),c(0,100000),c(0,100000))
+
+titles<-list("glycerol","atc", "atc_gradient")
 time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, ylims, xlims, SIMPLIFY = F)
 
 time_lapse_plots
@@ -130,7 +98,7 @@ f_ssc_vs_fsc_plot<-
   function(dataframe, title){
   
   final_plot<- ggplot(dataframe) +
-    geom_bin2d(aes_(x=dataframe[,2], y=dataframe[,3]), bins=100) +
+    geom_bin2d(aes_(x=dataframe[,1], y=dataframe[,3]), bins=100) +
     facet_wrap(~dataframe[,4]) +
     
     theme_bw() +
@@ -148,7 +116,7 @@ f_ssc_vs_fsc_plot<-
 }
 size_plots<-mapply(f_ssc_vs_fsc_plot, df_list, titles, SIMPLIFY = F)
 
-size_plots[[3]]
+size_plots
 
 mapply(f_save,size_plots,names(df_list),
          MoreArgs = list(paste(output_path, "/size",sep=""), "", 10, 15), SIMPLIFY = F)

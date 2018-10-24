@@ -10,63 +10,61 @@ library(ggplot2)
 source("common_functions.R")
 source("stat_functions.R")
 
-t0p1_file<-"180824_washnarrest/2773_measure"
-t0p2_file<-"180824_washnarrest/2773_atc"
-t0p3_file<-"180824_washnarrest/2788_measure"
-t0p4_file<-"180824_washnarrest/2788_atc"
-t0p5_file<-"180824_washnarrest/parent"
-t0p6_file<-"180824_washnarrest/controls"
-t0p7_file<-"180824_washnarrest/rad53"
-t0p8_file<-"180824_washnarrest/glycerol"
+t0p1_file<-"180910_2776_release/measure"
+t0p2_file<-"180910_2776_release/atc_control"
+t0p3_file<-"180910_2776_release/parent_control"
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/august18/180824_wash&arrest" # for saving plots
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/sep18/180910_arrest&release" # for saving plots
 pattern_read<-""
 
 starting_well<-1
+
+time_points<-c("t0","t90","t180","t270","t300","r5","r10","r15","r20","r25","r30","r35","r40",
+               "r45","r50","r55","r60","r65","r70","r75","r80","r85","r90","r95","r100","r105","r120")
 
 
 columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
 
 
-label_list<- c("tor2_t0",
-               "tor2_t90",
-               "tor2_t180",
-               "tor2_t270",
-               "tor2_t360",
-               "tor2_t21h",
+label_list<- c("2776_0_t0",
+               "2776_0_t90",
+               "2776_0_t180",
+               "2776_0_t270",
+               "2776_0_t300",
                
-               "tor260atc_t0",
-               "tor260atc_t360",
-               "tor260atc_t21h",
+               "2776_0_r5",
+               "2776_0_r10",
+               "2776_0_r15",
+               "2776_0_r20",
+               "2776_0_r25",
+               "2776_0_r30",
+               "2776_0_r35",
+               "2776_0_r40",
+               "2776_0_r45",
+               "2776_0_r50",
+               "2776_0_r55",
+               "2776_0_r60",
+               "2776_0_r65",
+               "2776_0_r70",
+               "2776_0_r75",
+               "2776_0_r80",
+               "2776_0_r85",
+               "2776_0_r90",
+               "2776_0_r95",
+               "2776_0_r100",
+               "2776_0_r105",
+               "2776_0_r120",
+               
+               "2776_100_t300",
+               "2776_100_r60",
+               "2776_100_r120",
   
   
-               "cdc42_t0",
-               "cdc42_t90",
-               "cdc42_t180",
-               "cdc42_t270",
-               "cdc42_t360",
-               "cdc42_t21h",
-               
-               "cdc42atc100_t0",
-               "cdc42atc50_t360",
-               "cdc42atc50_t21h",
-               
                "parent_t0",
-               "parent_t360",
-               "parent_t21h",
-               
-               
-               "diploid_exponential",
-               "parent_Nstarved", 
-               
-               "rad53_0",
-               "rad53_5",
-               "rad53_10",
-               "rad53_20",
-               "rad53_50",
-               "rad53_100",
-               "rad53_200",
-               "rad53_600"
+               "parent_t300",
+               "parent_r60",
+               "parent_r120"
                )
 
 
@@ -109,12 +107,13 @@ f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
   
 }
 
-ylims<-list(c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,300),c(0,125),c(0,125))
-xlims<-list(c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,100000),c(0,50000))
-titles<-list("tor2(bK), - aTc", "tor2(bK), + aTc","cdc42, -aTc","cdc42, +aTc" ,"parent", "diploid strain","parent (N starved)", "rad53", "final system, glycerol")
-time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, ylims, xlims, SIMPLIFY = F)
+ylims<-c(0,160)
+xlims<-c(0,50000)
 
-time_lapse_plots
+titles<-list("cdc20, arrest&release","cdc20, 100 aTc", "parent strain")
+time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, MoreArgs = list(ylims, xlims), SIMPLIFY = F)
+
+time_lapse_plots[[1]]
 
  mapply(f_save,time_lapse_plots,names(df_list),
          MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
@@ -130,7 +129,7 @@ f_ssc_vs_fsc_plot<-
   function(dataframe, title){
   
   final_plot<- ggplot(dataframe) +
-    geom_bin2d(aes_(x=dataframe[,2], y=dataframe[,3]), bins=100) +
+    geom_bin2d(aes_(x=dataframe[,1], y=dataframe[,3]), bins=100) +
     facet_wrap(~dataframe[,4]) +
     
     theme_bw() +
@@ -148,7 +147,7 @@ f_ssc_vs_fsc_plot<-
 }
 size_plots<-mapply(f_ssc_vs_fsc_plot, df_list, titles, SIMPLIFY = F)
 
-size_plots[[3]]
+size_plots[[9]]
 
 mapply(f_save,size_plots,names(df_list),
          MoreArgs = list(paste(output_path, "/size",sep=""), "", 10, 15), SIMPLIFY = F)

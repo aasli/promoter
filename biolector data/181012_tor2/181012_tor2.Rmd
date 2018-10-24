@@ -1,0 +1,258 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+data<-read.csv("181012_tor2.csv")
+
+offset=FALSE
+average=FALSE
+
+
+```
+
+```{r}
+colnames(data)<-c("reading","well","content","description","filter","time","amplitude","phase",
+                  "amplitude2","temperature","humidity","O2","CO2","comments")
+
+data1<-subset(data,data$filter==1)
+data2<-subset(data,data$filter==2)
+data3<-subset(data,data$filter==3)
+
+data_to_use<-data2
+
+eth_2772<-subset(data_to_use,
+            data_to_use$well %in% c("A05","A06","B05","B06",
+                                    "C05","C06","D05","D06",
+                                    "E05","E06","F05","F06"))
+
+eth_2773<-subset(data_to_use,
+            data_to_use$well %in% c("A07","A08","B07","B08",
+                                    "C07","C08","D07","D08",
+                                    "E07","E08","F07","F08"))
+
+ypd_2772<-subset(data_to_use,
+            data_to_use$well %in% c("A01","A02","B01","B02",
+                                    "C01","C02","D01","D02",
+                                    "E01","E02","F01","F02"))
+
+ypd_2773<-subset(data_to_use,
+            data_to_use$well %in% c("A03","A04","B03","B04",
+                                    "C03","C04","D03","D04",
+                                    "E03","E04","F03","F04"))
+
+
+```
+
+```{r}
+library(reshape2)
+names_strains<-c("GoodKozak","BadKozak")
+
+list_eth<-list(eth_2772,eth_2773)
+list_ypd<-list(ypd_2772,ypd_2773)
+
+names(list_eth)<-names_strains
+names(list_ypd)<-names_strains
+
+eth<-melt(list_eth, id=c("amplitude","well","time"))
+eth<-droplevels(eth)
+
+ypd<-melt(list_ypd, id=c("amplitude","well","time"))
+ypd<-droplevels(ypd)
+```
+
+```{r}
+ # set to true if you want to offset everything such that the minimum of all the curves will be 1.  
+
+
+if(offset==TRUE){
+f_offset<-function(dataframe){
+for(i in unique(dataframe$well)){ 
+  # this function calculates the minimum of each growth curve per well.
+  # then substracts (this value-1) from all measurements to move the min of the curve to 1.
+
+  well_group<-dataframe[which(dataframe$well==i),] # select all measurements of a given well
+  minimum<-min(well_group$amplitude) # find minimum
+ 
+  for(j in c(1:nrow(well_group))){ # for each row in the selection
+    well_group[j,1]<-((well_group[j,1]/minimum)) # subtract the min and add 1.
+  }
+  
+  dataframe[which(dataframe$well==i),]<-well_group # replace the original dataframe with these new values.
+  
+}
+  return(dataframe)
+}
+
+eth<-f_offset(eth)
+pro<-f_offset(pro)
+gly<-f_offset(gly)
+sd<-f_offset(sd)
+ypd<-f_offset(ypd)
+
+}
+```
+
+
+```{r}
+library(ggplot2)
+
+ # to plot the average of all 4 wells with an sd ribbon, set to TRUE
+
+f_average<-function(frame){ 
+  # this function is called inside the f_mean_sd function
+  # the input is a row of four columns, and this function calculates the mean and sd
+  # then adds these vallues as the 5th and 6th columns. 
+  # needs to be applied to a dataframe rowbyrow to work. 
+  
+    mean<-mean(frame[c(1:4)])
+    sd<-sd(frame[c(1:4)])
+    frame[5]<-mean
+    frame[6]<-sd
+    frame<-as.vector(frame)
+    
+    return(frame)
+}
+
+f_mean_sd<-function(dataframe){
+    # this function calculates the average of 4 wells and the sd. 
+    # input needs to be a dataframe with at least columns well, time and amplitude.
+  
+  wells<-unique(dataframe$well) # the wells to take into account for the calculation
+  first<-dataframe[which(dataframe$well==wells[[1]]),1] # amplitude measurements of well 1
+  second<-dataframe[which(dataframe$well==wells[[2]]),1] # 2 
+  third<-dataframe[which(dataframe$well==wells[[3]]),1]  # 3 and
+  fourth<-dataframe[which(dataframe$well==wells[[4]]),1] # 4
+  
+  time<-dataframe[which(dataframe$well==wells[[1]]),3] # time measurements of well 1, for plotting purposes. Otherwise I have no x axis to plot against. 
+  
+  frame_of_amplitudes<-cbind(first,second,third,fourth) # put together the four measurements per timepoint.
+  
+  # apply the averaging function to the frame you just created. 
+  average_frame<-t(as.data.frame(apply(frame_of_amplitudes,1,f_average))) 
+    
+  average_frame<-cbind(average_frame,time) # add the time measurements to the frame
+  
+  colnames(average_frame)<-c("1","2","3","4","mean","sd","time")
+  
+  return(average_frame)
+}
+  
+  
+
+f_plot<-function(melted_list){
+  # this function plots either the raw data, the offset data or the averaged data based on the input. 
+  # for averaged data, average=TRUE should be set. 
+  # input is a dataframe containing at least time, L1 and amplitude columns
+
+  # first the dataframe is separated into the strains.  
+  rnr2<-melted_list[which(melted_list$L1=="GoodKozak"),]
+  rnr2<-droplevels(rnr2)
+  fry70<-melted_list[which(melted_list$L1=="BadKozak"),]
+  fry70<-droplevels(fry70)
+
+  list_of_frames<-list(rnr2,fry70) # for averaging, all frames are put into a list
+
+  if(average==FALSE){ # for plotting raw or offset data
+    plot<-ggplot()+
+      theme_bw() +
+  
+      geom_line(data=rnr2,aes(x=time,y=amplitude, colour=well), linetype=1,size=1, show.legend = FALSE) +
+      geom_line(data=fry70,aes(x=time,y=amplitude, colour=well), linetype=2,size=1, show.legend = FALSE) +
+      geom_area(aes(x=10,y=10,fill="0")) +
+      geom_area(aes(x=10,y=10,fill="30")) +
+      geom_area(aes(x=10,y=10,fill="60")) +
+      geom_area(aes(x=10,y=10,fill="200")) +
+      geom_line(aes(x=10000,y=10,linetype="good kozak")) +
+      geom_line(aes(x=10000,y=10,linetype="bad kozak"))  +
+      
+      scale_colour_manual(values=c("A01"="lightblue","B01"="lightblue","C01"="lightblue",
+                                   "D01"="blue","E01"="blue","F01"="blue",
+                                   "A02"="darkblue","B02"="darkblue","C02"="darkblue",
+                                   "D02"="black","E02"="black","F02"="black",
+                                   "A03"="lightblue","B03"="lightblue","C03"="lightblue",
+                                   "D03"="blue","E03"="blue","F03"="blue",
+                                   "A04"="darkblue","B04"="darkblue","C04"="darkblue",
+                                   "D04"="black","E04"="black","F04"="black",
+                                   "RNR2"="red","fry70"="purple",
+                                   
+                                   "A05"="lightblue","B05"="lightblue","C05"="lightblue",
+                                   "D05"="blue","E05"="blue","F05"="blue",
+                                   "A06"="darkblue","B06"="darkblue","C06"="darkblue",
+                                   "D06"="black","E06"="black","F06"="black",
+                                   "A07"="lightblue","B07"="lightblue","C07"="lightblue",
+                                   "D07"="blue","E07"="blue","F07"="blue",
+                                   "A08"="darkblue","B08"="darkblue","C08"="darkblue",
+                                   "D08"="black","E08"="black","F08"="black")) +
+      
+      scale_fill_manual(values=c("0"="lightblue","30"="blue","60"="darkblue","200"="black",
+                                   "0"="lightgreen","30"="green","60"="darkgreen","200"="brown")) +
+      
+      
+      scale_linetype_manual(values=c("good kozak"="solid","bad kozak"="longdash")) +
+      guides(fill=guide_legend(override.aes = list(shape=21), title = "aTc[ng/mL]"), 
+             linetype=guide_legend(title=""), 
+             colour=guide_legend(position="none"))+
+        
+      xlim(0,100) 
+  
+  }
+
+ 
+
+
+return(plot)
+
+}
+
+library(ggplot2)
+# get a plot for each condition
+plot_eth<-f_plot(eth)
+plot_ypd<-f_plot(ypd)
+
+plot_eth
+plot_ypd
+
+plot_ypd<-plot_ypd + xlim (0,20) + ggtitle("YPD")
+plot_ypd
+plot_eth<-plot_eth + xlim(0,100) + ggtitle("YPE")
+
+plot_list<-list(plot_eth,plot_ypd) # make a list for saving
+
+names<-c("eth","ypd") # make a list of names for saving
+
+if(offset==TRUE){ # to add "_offset" at the end of the name if saving offset data
+for(i in names){
+  name<-paste(i,"_offset_divide",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+if(average==TRUE){ # to add "_average" at the end of the name if saving averaged data
+for(i in names){
+  name<-paste(i,"_average",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+f_save<-function(plot,name){
+  
+  print(plot)
+  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/sep18/180914_tor2_biolector")
+}
+
+mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
+
+```
+
+
+```{r}
+
+```
+
