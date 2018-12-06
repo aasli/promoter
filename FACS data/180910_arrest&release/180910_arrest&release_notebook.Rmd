@@ -20,11 +20,10 @@ pattern_read<-""
 
 starting_well<-1
 
-time_points<-c("t0","t90","t180","t270","t300","r5","r10","r15","r20","r25","r30","r35","r40",
-               "r45","r50","r55","r60","r65","r70","r75","r80","r85","r90","r95","r100","r105","r120")
+time_points<-c(-300,-270,-180,-90,seq(0,105,5),120)
 
 
-columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+columns_to_include<-c(2,5,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
 
 
 label_list<- c("2776_0_t0",
@@ -93,8 +92,13 @@ size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwi
 
 f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
   
+  #dataframe<-subset(dataframe,dataframe[,1]>60000 & dataframe[,2]>50000)
+  dataframe<-subset(dataframe,dataframe[,1]<=60000 & dataframe[,2]<=50000)
+ 
+  
   final_plot<- ggplot(dataframe) +
-    geom_histogram(aes_(x=dataframe[,3]), binwidth = 100) +
+    
+    geom_histogram(aes_(x=dataframe[,3]), colour="red", bins=100) +
     facet_wrap(~dataframe[,4]) +
     
     theme_bw() +
@@ -107,15 +111,57 @@ f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
   
 }
 
-ylims<-c(0,160)
-xlims<-c(0,50000)
+ylims<-c(0,NA)
+xlims<-c(0,60000)
 
 titles<-list("cdc20, arrest&release","cdc20, 100 aTc", "parent strain")
 time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, MoreArgs = list(ylims, xlims), SIMPLIFY = F)
 
 time_lapse_plots[[1]]
 
- mapply(f_save,time_lapse_plots,names(df_list),
+ mapply(f_save,time_lapse_plots,paste(names(df_list),"small", sep="_"),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+
+
+
+```
+
+```{r}
+
+
+f_time_lapse_size<-function(dataframe, title, ylims, xlims,times_to_plot){
+  
+  dataframe<-subset(dataframe,dataframe[,4]%in% times_to_plot)
+  
+  final_plot<- ggplot(dataframe) +
+    geom_density_2d(aes_(x=dataframe[,1],y=dataframe[,2])) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("FSC-H") +
+    ylab("SSC-H") +
+    scale_x_continuous(limits=(xlims))+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+}
+
+ylims<-c(0,NA)
+xlims<-c(0,NA)
+
+times_to_plot<-c(-300,0)
+titles<-list("cdc20, arrest&release","cdc20, 100 aTc", "parent strain")
+time_lapse_size<-mapply(f_time_lapse_size, df_list, titles, MoreArgs = list(ylims, xlims,times_to_plot), SIMPLIFY = F)
+
+time_lapse_size[[1]]
+
+ggsave(path=output_path, filename="size_at_release.jpeg")
+
+ mapply(f_save,time_lapse_size,paste(names(df_list),"size",sep="_"),
          MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
 
 
@@ -127,9 +173,12 @@ time_lapse_plots[[1]]
 ```{r}
 f_ssc_vs_fsc_plot<-
   function(dataframe, title){
+  subset1<-subset(dataframe,dataframe[,1]>60000 & dataframe[,2]>50000)
+  subset2<-subset(dataframe,dataframe[,1]<=60000 & dataframe[,2]<=50000)
   
   final_plot<- ggplot(dataframe) +
-    geom_bin2d(aes_(x=dataframe[,1], y=dataframe[,3]), bins=100) +
+    geom_bin2d(aes_(x=subset1[,1], y=subset1[,3], colour="large cells"), bins=100) +
+    geom_bin2d(aes_(x=subset2[,1], y=subset2[,3], colour="small cells"), bins=100) +
     facet_wrap(~dataframe[,4]) +
     
     theme_bw() +
@@ -174,6 +223,152 @@ ggplot(df_with_size[[n]]) +
   geom_density_2d(aes(df_with_size[[n]][,5], df_with_size[[n]][,3])) +
   facet_wrap(~df_with_size[[n]][,4])
 
+
+```
+
+
+```{r}
+# paper figure
+
+f_final_plot<-function(dataframe, time_points_to_plot){
+  
+  df_to_plot<-subset(dataframe,dataframe[,4]%in%time_points_to_plot)
+  
+  plot<-ggplot(df_to_plot) +
+  geom_histogram(aes_(x=df_to_plot[,3]), binwidth = 100) +
+  facet_wrap(~df_to_plot[,4],dir = "v", ncol = 2, strip.position = "left") 
+
+  pretty_plot<-plot +
+    scale_x_continuous(limits=c(15000,50000), labels=c(20,30,40,50), 
+                       breaks = c(20000,30000,40000,50000) ) +
+    scale_y_continuous(limits=c(0, 180), breaks=c(0,180))+
+    xlab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
+    ylab("Count") +
+    theme(panel.grid.minor = element_blank(),
+            legend.position = c(0.17,0.8), 
+            legend.direction = "vertical",
+            legend.title = element_text(size=10),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(),
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank(),
+            strip.background = element_rect(fill="white",size = 5),
+            strip.text = element_text()
+          
+            )
+  
+  return(pretty_plot)
+}
+
+selected_time_points<-c("t0","t300","r30", "r35","r40","r45","r50","r55","r65",
+                        "r90","r95","r100","r105","r120")
+
+f_final_plot(df_list[[1]],selected_time_points)
+
+
+ggsave(path=output_path, filename="final_plot_arrestrelease.jpeg",height=6, width=9.04, units="cm")
+ggsave(path=output_path, filename="final_plot_arrestrelease.pdf",height=6, width=9.04, units="cm")
+
+```
+
+```{r}
+
+
+# 24000<Sphase<36000
+
+f_percentage_plot<-function(dataframe){
+  
+  g1_cells<-subset(dataframe,dataframe[,3]<=24000)
+  sphase_cells<-subset(dataframe,dataframe[,3]>24000 & dataframe[,3]<36000)
+  g2_cells<-subset(dataframe,dataframe[,3]>=36000)
+  
+  dataframe_percentages<-as.data.frame(matrix(ncol=4))
+  colnames(dataframe_percentages)<-c("time point","g1","s","g2")
+
+  for(i in unique(dataframe$"Time Point")){
+    m<-which(i==unique(dataframe$"Time Point"))
+    sub_g1<-subset(g1_cells,g1_cells$"Time Point"==i)
+    sub_s<-subset(sphase_cells,sphase_cells$"Time Point"==i)
+    sub_g2<-subset(g2_cells,g2_cells$"Time Point"==i)
+    sub_all<-subset(dataframe,dataframe$"Time Point"==i)
+    
+    g1_population<-nrow(sub_g1)/nrow(sub_all)*100
+    s_population<-nrow(sub_s)/nrow(sub_all)*100
+    g2_population<-nrow(sub_g2)/nrow(sub_all)*100
+    
+    dataframe_percentages[m,1]<-i
+    dataframe_percentages[m,2]<-g1_population
+    dataframe_percentages[m,3]<-s_population
+    dataframe_percentages[m,4]<-g2_population
+    
+  }
+  
+ 
+  plot<-ggplot() +
+    geom_point(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"g1", colour="G1"))+  
+    geom_point(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"s", colour="S"))+  
+    geom_point(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"g2", colour="G2"))+ 
+    
+    geom_line(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"g1", colour="G1"))+  
+    geom_line(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"s", colour="S"))+  
+    geom_line(aes_(x=dataframe_percentages$"time point", y=dataframe_percentages$"g2", colour="G2"))+ 
+    
+    theme_bw() +
+    xlab("Time from release (min)") +
+    ylab("% of cells")
+  
+  return(plot)
+  
+}
+
+f_percentage_plot(df_list[[1]])
+
+ggsave(path = output_path, filename="percentages.jpeg")
+
+```
+
+```{r}
+## getting size from fsc/ssc
+
+f_row_size<-function(frame){
+  row_sum<-sum(frame[[1]]^2,frame[[2]]^2)
+  row_sqrt<-sqrt(row_sum)
+  return(row_sqrt)
+}
+
+
+f_size<-function(dataframe){
+  new_df<-as.data.frame(dataframe)[,1:2]
+  size<-as.data.frame(apply(new_df,1,f_row_size))
+  
+  dataframe<-cbind(dataframe,size)
+  
+}
+
+df_with_size<-lapply(df_list,f_size)
+
+
+f_size_vs_stain<-function(dataframe){
+  
+  plot<-ggplot(dataframe) +
+    geom_point(aes_(x=dataframe[,5],dataframe[,3])) +
+    facet_wrap(~dataframe[,4])
+  
+  pretty_plot<-plot +
+    theme_bw()
+  
+  
+  return(pretty_plot)
+  
+}
+
+lapply(df_with_size,f_size_vs_stain)
 
 ```
 

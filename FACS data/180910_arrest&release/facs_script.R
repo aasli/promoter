@@ -8,8 +8,8 @@ t0p3<-f_read(t0p3_file,pattern_read)
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
 df_list<-c(f_df_list(t0p1,starting_well,27,time_points,columns_to_include),
-           f_df_list(t0p2,starting_well,3,c("t300","r60","r120"),columns_to_include),
-           f_df_list(t0p3,starting_well,4,c("t0","t300","r60","r120"),columns_to_include)
+           f_df_list(t0p2,starting_well,3,c(0,60,120),columns_to_include),
+           f_df_list(t0p3,starting_well,4,c(-300,0,60,120),columns_to_include)
            )
 
 

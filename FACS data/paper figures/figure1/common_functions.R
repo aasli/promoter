@@ -28,7 +28,7 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns,length_
     dose<-doses[[which(k==c(i:(i+wells_per_sample-1)))]]
     dose_column<-as.data.frame(rep(dose,nrow(sample)))
     sample<-cbind(sample,dose_column)
-    colnames(sample)[4]<-"Dose"
+    colnames(sample)[6]<-"Dose"
     
     strain<-rbind(strain,sample)
     }
@@ -37,27 +37,8 @@ f_df_list<-function(flowset,starting_well,wells_per_sample,doses,columns,length_
     df_list[[index]]<-strain
     
     
-    
   }
   
-  
-  # for(m in c(85:90)){
-  #   
-  #   if((m %% 2) == 0) {
-  #     dose<-0
-  #   } else {
-  #     dose<-400
-  #   }
-  #   print(m)
-  #   
-  #   sample<-as.data.frame(flowset[[m]]@exprs[,columns])
-  #   dose_column<-as.data.frame(rep(dose,nrow(sample)))
-  #   sample<-cbind(sample,dose_column)
-  #   colnames(sample)[4]<-"Dose"
-  #   
-  #   df_list[[m]]<-sample
-  # }
-  # 
   return(df_list)
 }
 

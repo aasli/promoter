@@ -682,29 +682,29 @@ f_plot_sigmoid_curves_overlaid<-
     
     
     # plot the controls
-    
-    for(k in c(1:length(control_frame_list))){
-      
-      dose_control<-control_doses[[k]]
-      
-      dataframe<-as.vector(control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),])
-      
-      print(dataframe)
-      
-      print(label_list_control[[k]])
-      print(label_list_sigmoid[[ceiling(k/2)]])
-       
-      single_layer_control<- geom_hline(aes_(yintercept=dataframe[[1]],
-                                             linetype=label_list_control[[k]],colour=
-                                               label_list_sigmoid[[ceiling(k/2)]]))
-      # ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
-      #                                         ymax=frame[,1]-(frame[,6]*frame[,1]),
-      #                                         x=x_values))
-
-      final_plot<-final_plot+single_layer_control
-
-    }
-    
+    # 
+    # for(k in c(1:length(control_frame_list))){
+    #   
+    #   print(k)
+    #   dose_control<-control_doses[[k]]
+    #   
+    #   dataframe<-as.vector(control_frame_list[[k]][which(control_frame_list[[k]][,8]==dose_control),])
+    #   
+    #   
+    #   
+    #   single_layer_control<- geom_hline(aes_(yintercept=dataframe[[1]],
+    #                                          linetype=label_list_control[[k]],colour=
+    #                                            label_list_sigmoid[[ceiling(k/2)]]))
+    #   # ribbon_layer_control<- geom_ribbon(aes_(ymin=frame[,1]-(frame[,6]*frame[,1]),
+    #   #                                         ymax=frame[,1]-(frame[,6]*frame[,1]),
+    #   #                                         x=x_values))
+    # 
+    #   final_plot<-final_plot+single_layer_control
+    #   
+    #   
+    # 
+    # }
+    # 
     
     
     pretty_plot<-final_plot +
@@ -844,7 +844,7 @@ sigmoid_plot_overlaid<-f_plot_sigmoid_curves_overlaid(fit,frame_list, control_fr
                                     label_list_control, xlim, ylim, dose_control)
 
 
-sigmoid_plot_overlaid 
+sigmoid_plot_overlaid + theme(legend.position = "top")
 
 sigmoid_plot_overlaid_zoom<-sigmoid_plot_overlaid + scale_x_continuous(limits=c(0,50), breaks=c(0,10,30,50))
 

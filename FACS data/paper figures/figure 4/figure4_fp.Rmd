@@ -553,6 +553,14 @@ f_save_pdf(spearman,paste("spearman.pdf",time_point_sigmoid,sep = "_"),
        height=height_sigmoid, width=width_sigmoid)
 
 
+f_plot_sigmoid_curves(list(sigmoid_fit_descriptives[[10]]),list(frame_list[[10]]), control_list,
+                                    control_list_sigmoid, ec_list_descriptives) + 
+  scale_x_log10(limits=c(1,NA), breaks=c(1,5,20,60,200,600)) +
+  theme(legend.position = "none")
+
+ggsave(filename="transcriptional_system.pdf",
+       path="C:/Users/aslia/Desktop/pisi/ETH/PhD/misc/presentations/181128_group meeting", 
+       height=6, width = 9.04, units="cm")
 
 ```
 

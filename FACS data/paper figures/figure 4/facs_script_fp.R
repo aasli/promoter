@@ -98,3 +98,14 @@ names(descriptives)<-df_list_names
 df_with_size<-lapply(df_list,f_size)
 
 
+
+
+#----------------------------------------------------------------------------------
+
+write.table(df_list[[41]], "final_system_all_data.csv")
+write.table(descriptives[[41]], "final_system_summary_data.csv")
+write.table(descriptives[[44]], "autofluorescence.csv")
+write.table(descriptives[[43]], "pTDH3_citrine.csv")
+
+
+

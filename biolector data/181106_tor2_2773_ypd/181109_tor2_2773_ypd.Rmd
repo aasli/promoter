@@ -1,0 +1,380 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+data<-read.csv("181109_tor2_2773_ypd.csv")
+
+offset=TRUE
+average=FALSE
+
+
+```
+
+```{r}
+colnames(data)<-c("reading","well","content","description","filter","time","amplitude","phase",
+                  "amplitude2","temperature","humidity","O2","CO2","comments")
+
+data1<-subset(data,data$filter==1)
+data2<-subset(data,data$filter==2)
+data3<-subset(data,data$filter==3)
+
+data_to_use<-data2
+
+ypd_2772<-subset(data_to_use,
+            data_to_use$well %in% c("A01","A02","A03","A04",
+                                    "B01","B02","B03","B04",
+                                    "C01","C02","C03","C04",
+                                    "D01","D02","D03","D04",
+                                    "E01","E02","E03","E04",
+                                    "F01","F02","F03","F04"))
+
+ypd_2769<-subset(data_to_use,
+            data_to_use$well %in% c("A05","A06","A07","A08",
+                                    "B05","B06","B07","B08",
+                                    "C05","C06","C07","C08",
+                                    "D05","D06","D07","D08",
+                                    "E05","E06","E07","E08",
+                                    "F05","F06","F07","F08"))
+
+
+
+```
+
+```{r}
+library(reshape2)
+names_strains<-c("tor2","parent")
+
+list_strains<-list(ypd_2772,ypd_2769)
+
+names(list_strains)<-names_strains
+
+list_melted_tor<-melt(list_strains[1], id=c("amplitude","well","time"))
+list_melted_tor<-droplevels(list_melted_tor)
+
+list_melted_parent<-melt(list_strains[2], id=c("amplitude","well","time"))
+list_melted_parent<-droplevels(list_melted_parent)
+```
+
+```{r}
+ # set to true if you want to offset everything such that the minimum of all the curves will be 1.  
+
+
+if(offset==TRUE){
+f_offset<-function(dataframe){
+for(i in unique(dataframe$well)){ 
+  # this function calculates the minimum of each growth curve per well.
+  # then substracts (this value-1) from all measurements to move the min of the curve to 1.
+
+  well_group<-dataframe[which(dataframe$well==i),] # select all measurements of a given well
+  minimum<-min(well_group$amplitude) # find minimum
+ 
+  for(j in c(1:nrow(well_group))){ # for each row in the selection
+    well_group[j,1]<-((well_group[j,1]-minimum)+1) # subtract the min and add 1.
+  }
+  
+  dataframe[which(dataframe$well==i),]<-well_group # replace the original dataframe with these new values.
+  
+}
+  return(dataframe)
+}
+
+list_melted_tor<-f_offset(list_melted_tor)
+list_melted_parent<-f_offset(list_melted_parent)
+
+}
+```
+
+
+```{r}
+library(ggplot2)
+
+ # to plot the average of all 4 wells with an sd ribbon, set to TRUE
+
+f_plot<-function(melted_list){
+  # this function plots either the raw data, the offset data or the averaged data based on the input. 
+  # for averaged data, average=TRUE should be set. 
+  # input is a dataframe containing at least time, L1 and amplitude columns
+
+  # first the dataframe is separated into the strains.  
+  rnr2<-melted_list[which(melted_list$L1=="tor2"),]
+  rnr2<-droplevels(rnr2)
+  fry70<-melted_list[which(melted_list$L1=="parent"),]
+  fry70<-droplevels(fry70)
+
+  list_of_frames<-list(rnr2,fry70) # for averaging, all frames are put into a list
+
+  if(average==FALSE){ # for plotting raw or offset data
+    plot<-ggplot()+
+      theme_bw() +
+  
+      geom_line(data=rnr2,aes(x=time,y=amplitude, colour=well), linetype=1,size=1, show.legend = FALSE) +
+      geom_line(data=fry70,aes(x=time,y=amplitude, colour=well), linetype=1,size=1, show.legend = FALSE) +
+      geom_area(aes(x=10,y=10,fill="0")) +
+      geom_area(aes(x=10,y=10,fill="5")) +
+      geom_area(aes(x=10,y=10,fill="8")) +
+      geom_area(aes(x=10,y=10,fill="15")) +
+      geom_area(aes(x=10,y=10,fill="30")) +
+      geom_area(aes(x=10,y=10,fill="60")) +
+      geom_area(aes(x=10,y=10,fill="200")) +
+      geom_area(aes(x=10,y=10,fill="600")) +
+      geom_line(aes(x=10000,y=10,linetype="tor2")) +
+      geom_line(aes(x=10000,y=10,linetype="parent"))  +
+      
+      scale_colour_manual(values=c("A01"="gray90","B01"="gray90","C01"="gray90",
+                                   "D01"="green","E01"="green","F01"="green",
+                                   "A02"="gray50","B02"="gray50","C02"="gray50",
+                                   "D02"="purple","E02"="purple","F02"="purple",
+                                   "A03"="orange","B03"="orange","C03"="orange",
+                                   "D03"="black","E03"="black","F03"="black",
+                                   "A04"="blue","B04"="blue","C04"="blue",
+                                   "D04"="red","E04"="red","F04"="red",
+                                   "RNR2"="red","fry70"="purple",
+                                   
+                                   "A05"="gray90","B05"="gray90","C05"="gray90",
+                                   "D05"="green","E05"="green","F05"="green",
+                                   "A06"="gray50","B06"="gray50","C06"="gray50",
+                                   "D06"="purple","E06"="purple","F06"="purple",
+                                   "A07"="orange","B07"="orange","C07"="orange",
+                                   "D07"="black","E07"="black","F07"="black",
+                                   "A08"="blue","B08"="blue","C08"="blue",
+                                   "D08"="red","E08"="red","F08"="red")) +
+      
+      scale_fill_manual(values=c("0"="gray90","5"="green","8"="gray50",
+                                 "15"="purple","30"="orange","60"="black",
+                                 "200"="blue", "600"="red")) +
+      
+      
+      #scale_linetype_manual(values=c("good kozak"="solid","parent"="solid")) +
+      guides(fill=guide_legend(override.aes = list(shape=21), title = "aTc[ng/mL]"), 
+             linetype=guide_legend(title=""), 
+             colour=guide_legend(position="none"))+
+        
+      xlim(7.5,22.5) 
+  
+  }
+
+ 
+
+
+return(plot)
+
+}
+
+library(ggplot2)
+# get a plot for each condition
+plot_tor<-f_plot(list_melted_tor) + ggtitle("tor2_badKozak")
+plot_parent<-f_plot(list_melted_parent) + ggtitle("parent")
+
+plot_tor
+plot_parent
+
+
+plot_list<-list(plot_tor,plot_parent) # make a list for saving
+
+names<-c("eth_tor2_2772","parent") # make a list of names for saving
+
+if(offset==TRUE){ # to add "_offset" at the end of the name if saving offset data
+for(i in names){
+  name<-paste(i,"_offset_subtract",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+if(average==TRUE){ # to add "_average" at the end of the name if saving averaged data
+for(i in names){
+  name<-paste(i,"_average",sep = "")
+  names[which(names==i)]<-name
+  
+}
+  
+}
+
+f_save<-function(plot,name){
+  
+  print(plot)
+  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/nov18/181109_tor2_biolector_2773_ypd",height=6, width=9.04, units = "cm")
+}
+
+f_save_pdf<-function(plot,name){
+  
+  print(plot)
+  ggsave(filename=paste(name,".pdf"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/nov18/181109_tor2_biolector_2773_ypd",height=6, width=9.04, units = "cm")
+}
+
+mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
+
+
+
+```
+
+
+```{r}
+
+# convert well names from A01 etc to numeri. It will automatically take the levels of the factor for this
+list_melted_parent$well<-(as.numeric(list_melted_parent$well)) 
+list_melted_tor$well<-as.numeric(list_melted_tor$well)
+
+
+f_add_dose_column<-function(dataframe, list_of_wells, doses){
+  # adds a column with doses corresponding to each well
+  # needs a dataframe where the well names have been converted to numbers
+  # list of wells should be a list of vectors, each vector containing the repetitions of the same dose in different wells. 
+  
+ 
+  dose_column<-vector(length=nrow(dataframe)) # generate empty vector
+    
+  for(i in doses){
+    m<-which(i==doses)
+    well_selection<-as.vector(list_of_wells[[m]]) # pick the wells that correspond to dose i
+    
+    positions<-which(dataframe$well %in% well_selection) # find positions in the empty vector that will correspond to the rows in the dataframe that have dose i
+    dose_column[positions]<-i # insert dose i in these positions
+    
+  }
+ 
+   dataframe[,ncol(dataframe)+1]<-dose_column # attach the vector of doses as a column to the dataframe
+   
+   return(dataframe)
+  
+}
+
+groups_of_wells<-list(c(1,5,9),
+                      c(13,17,21),
+                      c(2,6,10),
+                      c(14,18,22),
+                      c(3,7,11),
+                      c(15,19,23),
+                      c(4,8,12),
+                      c(16,20,24))
+
+experiment_doses<-c(0,5,8,15,30,60,200,600) # all the doses in the experiment
+
+list_melted_parent_dosed<-f_add_dose_column(list_melted_parent, groups_of_wells, experiment_doses)  
+colnames(list_melted_parent_dosed)[ncol(list_melted_parent_dosed)]<-"doses"
+
+list_melted_tor_dosed<-f_add_dose_column(list_melted_tor, groups_of_wells, experiment_doses)   
+colnames(list_melted_tor_dosed)[ncol(list_melted_tor_dosed)]<-"doses"   
+
+f_final_plot<-function(dataframe, doses_to_plot){
+  # function for plotting both strains separately, and only the doses that you want to plot
+  # doses_to_plot should be a vector of numbers
+  
+  df_to_plot<-subset(dataframe,dataframe$doses %in% doses_to_plot)
+  
+  plot<-ggplot() +
+    geom_line(aes(x=df_to_plot$time, y=df_to_plot$amplitude, group=df_to_plot$well, 
+                  colour=as.factor(df_to_plot$doses)), size=1) 
+   
+    
+  pretty_plot<-plot +   
+    scale_color_manual(values=colour_palette_final) +
+    
+    xlab("Time (h)") +
+    ylab("Amplitude (a.u.)") +
+    
+    guides(colour=guide_legend(title = "aTc [ng/mL]",ncol=2)) +
+    
+    xlim(8,25) +
+    ylim(0,120) +
+     theme(panel.grid.minor = element_blank(),
+            legend.position = c(0.17,0.8), 
+            legend.direction = "vertical",
+            legend.title = element_text(size=10),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(),
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            )
+  
+  return(pretty_plot)
+  
+  
+}
+
+
+colour_palette_final<-c("#9AD2F4","#92ADDB","#898FC3","#857EAA","#72637A","black")
+tor2_final<-f_final_plot(list_melted_tor_dosed,c(0,5,8,15,30,60))
+parent_final<-f_final_plot(list_melted_parent_dosed,c(0,5,8,15,30,60))
+
+tor2_final
+parent_final
+
+final_plots<-list(tor2_final,parent_final)
+names(final_plots)<-c("final_tor2","final_parent")
+
+mapply(f_save,final_plots,names(final_plots), SIMPLIFY = FALSE)
+mapply(f_save_pdf,final_plots,names(final_plots), SIMPLIFY = FALSE)
+
+```
+
+```{r}
+
+f_plot_combined<-function(dataframe1, dataframe2, doses_to_plot1, doses_to_plot2){
+  # combined parent and tor strain plots
+  
+  df_to_plot1<-subset(dataframe1, dataframe1$doses %in% doses_to_plot1)
+  df_to_plot2<-subset(dataframe2, dataframe2$doses %in% doses_to_plot2)
+  
+  plot<-ggplot() +
+    geom_line(aes(x=df_to_plot1$time, y=df_to_plot1$amplitude, group=df_to_plot1$well, 
+                  colour=as.factor(df_to_plot1$doses), linetype=df_to_plot1$L1), size=1)  +
+    
+    geom_line(aes(x=df_to_plot2$time, y=df_to_plot2$amplitude, group=df_to_plot2$well, 
+                  colour=as.factor(df_to_plot2$doses), linetype=df_to_plot2$L1), size=1)  
+    
+  pretty_plot<-plot +   
+    scale_color_manual(values=colour_palette_final) +
+    scale_linetype_manual(values=c("dashed","solid"))+
+    
+    xlab("Time (h)") +
+    ylab("Amplitude (a.u.)") +
+    
+    guides(colour=guide_legend(title = "aTc [ng/mL]",ncol=2),
+           linetype=guide_legend(title = "Strain", ncol=1)) +
+    
+    xlim(8,25) +
+    ylim(0,120) +
+     theme(panel.grid.minor = element_blank(),
+            legend.position = c(0.17,0.8), 
+            legend.direction = "vertical",
+            legend.title = element_text(size=10),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_rect(linetype = "solid", colour="black"),
+            legend.margin = margin(t=0.04,r=0.1,b=0.1,l=0.1,unit="cm"),
+            panel.border = element_blank(),
+             axis.line = element_line(),
+            # axis.text = element_text(size=24),
+            # axis.title = element_text(size=24),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank()
+            )
+  
+  return(pretty_plot)
+  
+  
+  
+}
+
+colour_palette_final<-c("#9AD2F4","#92ADDB","#898FC3","#857EAA","#72637A","black")
+combined_final<-f_plot_combined(list_melted_tor_dosed,list_melted_parent_dosed,c(0,5,8,15,30,60),c(0,60))
+
+combined_final
+
+f_save(combined_final, "combined_offset")
+f_save_pdf(combined_final, "combined_offset")
+
+
+```
+

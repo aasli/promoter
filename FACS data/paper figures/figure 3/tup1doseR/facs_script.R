@@ -39,6 +39,8 @@ df_list<-size_subset_df
 
 descriptives<-c(lapply(df_list,f_descriptives,column=cols_descriptives))
 
+
+write.table(descriptives[[3]], "pRNR2_tetr_tup1.csv")
 #----------------------------------------------------------------------------------
 
 # smoothed dose response
