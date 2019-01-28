@@ -1,0 +1,121 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+
+library(ggplot2)
+source("common_functions.R")
+source("stat_functions.R")
+
+t0p1_file<-"181123_IPL1_overexp/IPL1"
+t0p2_file<-"181123_IPL1_overexp/control"
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/NF outline/figures" # for saving plots
+pattern_read<-""
+
+starting_well<-1
+
+
+columns_to_include<-c(3,6,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+label_list<- c("2789_t0",
+               "2789_0_t18h",
+               "2789_10_t18h",
+               "2789_400_t18h",
+               "2769_t0",
+               "2769_t18h"
+               )
+
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+
+
+
+```
+
+
+```{r}
+
+
+f_time_lapse_plot<-function(dataframe, title, ylims, xlims){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_histogram(aes_(x=dataframe[,3]), binwidth = 100) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("Fluorescence (a.u.)") +
+    scale_x_continuous(limits=(xlims))+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+}
+
+y<-200
+x<-NA
+ylims<-list(c(0,y),c(0,y))
+xlims<-list(c(0,x),c(0,x))
+
+titles<-names(df_list)
+time_lapse_plots<-mapply(f_time_lapse_plot, df_list, titles, ylims, xlims, SIMPLIFY = F)
+
+time_lapse_plots
+
+ mapply(f_save,time_lapse_plots,names(df_list),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+control<-filter(df_list[[1]], df_list[[1]]$"Time Point" == "10 ng/mL")
+parent<-filter(df_list[[2]], df_list[[2]]$"Time Point" == "t18h")
+overexpression<-filter(df_list[[1]], df_list[[1]]$"Time Point" == "400 ng/mL")
+
+strains<-rbind(control,overexpression)
+
+ggplot(strains) +
+  
+  geom_histogram(aes(x=strains$`488 [C]-H`), binwidth = 100)  +
+  facet_wrap(~strains$`Time Point`, ncol=1, strip.position = "right") +
+  
+  theme(panel.grid = element_blank(),
+            legend.direction = "horizontal", legend.position = "none", 
+            panel.border = element_blank(), 
+            axis.line = element_line(),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank(),
+            strip.placement = "inside",
+            strip.text = element_text(size=6, margin=margin(0,0,0,0,"cm"))
+            ) + 
+  scale_x_continuous(limits = c(0,150000), breaks=seq(0,150000,50000), labels=seq(0,15000,5000)/1000) +
+  xlab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep="")))  +
+  ylab("Count") 
+  
+
+ggsave(filename = "IPL1_overexpression.jpg", path=output_path, height=6, width=9.04, units="cm")  
+ggsave(filename = "IPL1_overexpression.pdf", path=output_path, height=6, width=9.04, units="cm")  
+
+```
+

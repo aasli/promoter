@@ -198,8 +198,8 @@ f_plot_sigmoid_curves_single<-
                                     "pVph1"=17,
                                     "prnr2"=15)) +
       scale_colour_manual(values = c("pAct1"="grey50",
-                                     "pVph1"="grey30",
-                                     "prnr2"="grey10")) +
+                                     "pVph1"="grey20",
+                                     "prnr2"="black")) +
       scale_x_continuous(breaks = doses_experiment,
                     labels = labels_x_axis, 
                     limits = xlim,
@@ -242,7 +242,7 @@ dose_control<-"0"
 xlim<-c(0.15,600)
 ylim<-c(0,40000)
 
-colour_palette<-c("grey50","grey30","grey10")
+colour_palette<-c("grey50","grey20","black")
   #c("lightblue","blue","darkblue","grey20","grey50","grey80")
 list_of_starting_points<-list(
   # c(30000,0.1,15,10,200),

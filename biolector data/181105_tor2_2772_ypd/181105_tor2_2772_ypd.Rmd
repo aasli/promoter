@@ -197,7 +197,7 @@ for(i in names){
 f_save<-function(plot,name){
   
   print(plot)
-  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/nov18/181105_tor2_biolector_2772_ypd",height=6, width=9.04)
+  ggsave(filename=paste(name,".jpeg"),path="C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/nov18/181105_tor2_biolector_2772_ypd",height=6, width=9.04, units="cm")
 }
 
 mapply(f_save,plot_list,names, SIMPLIFY = FALSE)
@@ -344,14 +344,14 @@ f_plot_combined<-function(dataframe1, dataframe2, doses_to_plot1, doses_to_plot2
     xlab("Time (h)") +
     ylab("Amplitude (a.u.)") +
     
-    guides(colour=guide_legend(title = "aTc [ng/mL]",ncol=2),
-           linetype=guide_legend(title = "Strain", ncol=1)) +
+    guides(colour=guide_legend(title = "aTc [ng/mL]",ncol=3,  title.position = "top"),
+           linetype=guide_legend(title = "Strain", ncol=1, title.position = "top")) +
     
     xlim(8,25) +
     ylim(0,120) +
      theme(panel.grid.minor = element_blank(),
-            legend.position = c(0.17,0.8), 
-            legend.direction = "vertical",
+            legend.position = "top", 
+            legend.direction = "horizontal",
             legend.title = element_text(size=10),
             legend.key.height = unit(0.35,"cm"),
             legend.key = element_blank(),

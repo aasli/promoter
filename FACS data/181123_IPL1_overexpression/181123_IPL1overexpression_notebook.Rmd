@@ -13,7 +13,7 @@ source("stat_functions.R")
 t0p1_file<-"181123_IPL1_overexp/IPL1"
 t0p2_file<-"181123_IPL1_overexp/control"
 
-output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/oct18/181123_IPL1_overexpression" # for saving plots
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/nov18/181123_IPL1_overexpression" # for saving plots
 pattern_read<-""
 
 starting_well<-1
@@ -97,7 +97,6 @@ f_ssc_vs_fsc_plot<-
   final_plot<- ggplot(dataframe) +
     geom_bin2d(aes_(x=dataframe[,1], y=dataframe[,3]), bins=100) +
     facet_wrap(~dataframe[,4]) +
-    facet_wrap
     
     theme_bw() +
     ggtitle(title) +

@@ -59,3 +59,5 @@ df_with_size<-lapply(df_list,f_size)
 
 #----------------------------------------------------------------------------------
 
+setwd("C:/repos/promoter/FACS data/paper figures/figure 3")
+mapply("write.csv", descriptives[c(2,3,4,8,9,10)], paste(label_list[c(2,3,4,8,9,10)], ".csv", sep = ""), SIMPLIFY = F)

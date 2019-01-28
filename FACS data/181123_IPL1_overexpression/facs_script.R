@@ -6,7 +6,7 @@ t0p2<-f_read(t0p2_file,pattern_read)
 
 #----------------------------------------------------------------------------------
 # create the list of dataframes that contain all the data
-df_list<-c(f_df_list(t0p1,starting_well,4,c("t0","arrest","normal","overexpression"),columns_to_include),
+df_list<-c(f_df_list(t0p1,starting_well,4,c("t0","arrest","10 ng/mL","400 ng/mL"),columns_to_include),
            f_df_list(t0p2,starting_well,2,c("t0","t18h"),columns_to_include)
            )
 

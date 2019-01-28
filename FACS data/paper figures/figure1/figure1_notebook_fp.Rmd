@@ -191,12 +191,12 @@ f_plot_sigmoid_curves_single<-
       scale_colour_manual(values = colour_palette) +
       scale_x_continuous(breaks = breaks_sigmoid,
                     labels = labels_x_axis, 
-                    limits = xlim) +
-                    #trans = "log10") +
+                    limits = xlim,
+                    trans = "log10") +
       scale_y_continuous(limits = ylim, labels=formatter, 
                          breaks= ylim_breaks_sigmoid) +
       
-      guides(colour=guide_legend(nrow=2)) +
+      guides(colour=guide_legend(nrow=1)) +
       # ggtitle(plot_title) +
       xlab(xlabel) +
       ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep=""))) +
@@ -383,7 +383,7 @@ descriptives_to_use<-c(21,22)
 control_descriptives_to_use<-c(23,24,25)
 labels_to_use<-c(21,22)
 dose_control<-"600"
-xlim<-c(0,150)
+xlim<-c(0.19,200)
 ylim<-c(0,50000)
 ylim_breaks_sigmoid<-seq(0,50000,length.out = 6)
 
@@ -404,14 +404,14 @@ control_frame_list<-descriptives[control_descriptives_to_use]
 
 
 #define x axis doses and the labels for plotting
-breaks_sigmoid<-c(0,20,60,100,150)
-labels_x_axis<- breaks_sigmoid
+breaks_sigmoid<-c(0.19,3,20,60,200)
+labels_x_axis<- c(0,3,20,60,200)
 
 
 # # replace 0 values in the doses with 0.1
-# for(i in c(1:length(frame_list))){
-#   frame_list[[i]][1,8]<-0.19
-# }
+for(i in c(1:length(frame_list))){
+  frame_list[[i]][1,8]<-0.19
+}
 
 # generate log distributed x values for smoother line fitting. 
 library(emdbook)
@@ -448,7 +448,10 @@ sigmoid_fit_descriptives<-lapply(parameters,f_sigmoid_fit,x_values)
 
 # plot the fitted lines and the individual data points
 sigmoid_plot<-f_plot_sigmoid_curves_single(sigmoid_fit_descriptives,frame_list,control_frame_list,
-                                    dose_control, label_list_control,xlim, ylim, strain_list, doses_experiment)
+                                    dose_control, label_list_control,xlim, ylim, strain_list, doses_experiment) +
+  theme(legend.position = c(0.5,1),
+        legend.direction = "horizontal",
+        legend.box.background = element_blank() )
 
 sigmoid_plot 
 
@@ -716,11 +719,11 @@ f_plot_sigmoid_curves_overlaid<-
      scale_colour_manual(values = colour_palette) +
      scale_x_continuous(breaks = breaks_x_axis,
                    labels = labels_x_axis,
-                   limits = xlim
-                   #trans = "log10"
+                   limits = xlim,
+                   trans = "log10"
                    ) +
      scale_y_continuous(limits = ylim, labels=formatter, breaks=y_breaks_overlaid) +
-      guides(colour=guide_legend(title = "Strains",nrow=4)) +
+      guides(colour=guide_legend(title = "Strains",ncol=4)) +
       # ggtitle(plot_title) +
       xlab(xlabel) +
       ylab(expression(paste("Fluorescence x","10"^"3","(a.u.)",sep="")))+
@@ -774,7 +777,7 @@ f_fit_function<-function(x) (c + (d-c)/(1+ exp((b*(log(x+1))^p1)+(e*(log(x+1))^p
 
 descriptives_to_use<-c(1,6,11,16)
 control_descriptives_to_use<-c(3,5,8,10,13,15,18,20)
-xlim<-c(0,150)
+xlim<-c(0.19,200)
 ylim<-c(0,50000)
 y_breaks_overlaid<-seq(0,50000, length.out=6)
 dose_control<-c("400","400","200","200","200","200","400","400")
@@ -794,11 +797,15 @@ control_frame_error<-df_list[control_descriptives_to_use]
 # pick your controls
 control_frame_list<-descriptives[control_descriptives_to_use]
 
+# # replace 0 values in the doses with 0.1
+for(i in c(1:length(frame_list))){
+  frame_list[[i]][1,8]<-0.19
+}
 
 
 #define x axis doses and the labels for plotting
-breaks_x_axis<-c(0,20,60,100,150)
-labels_x_axis<- c(0,20,60,100,150)
+breaks_x_axis<-c(0.19,3,20,60,200)
+labels_x_axis<- c(0,3,20,60,200)
 
 
 # generate log distributed x values for smoother line fitting. 
@@ -841,10 +848,13 @@ for(i in c(1:length(drm_model))){
 fit<-lapply(parameters,f_sigmoid_fit,x_values)
 
 sigmoid_plot_overlaid<-f_plot_sigmoid_curves_overlaid(fit,frame_list, control_frame_list,
-                                    label_list_control, xlim, ylim, dose_control)
+                                    label_list_control, xlim, ylim, dose_control)+ theme(legend.position = c(0.5,1),
+                              legend.box.background = element_blank()) 
+  
 
 
-sigmoid_plot_overlaid + theme(legend.position = "top")
+sigmoid_plot_overlaid 
+  
 
 sigmoid_plot_overlaid_zoom<-sigmoid_plot_overlaid + scale_x_continuous(limits=c(0,50), breaks=c(0,10,30,50))
 
@@ -860,15 +870,18 @@ ggsave(sigmoid_plot_overlaid_zoom+ylab(""),
 ## derivative plot
 ylims_d<-c(0,11500)
 y_breaks_d<-seq(0,10000,length.out = 6)
-x_values_d<-seq(0,
+x_values_d<-seq(0.19,
                max(frame_list[[1]][,8]),length.out=10000)
+breaks_x_axis_d<-breaks_x_axis
+labels_x_axis_d<-labels_x_axis
 
 sigmoid_d_fit<-lapply(parameters,f_d_sigmoid_fit,x_values_d)
 
 
-derivative_plot_overlaid<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_sigmoid, c(1:4))
+derivative_plot_overlaid<-f_plot_sigmoid_d(x_values_d, sigmoid_d_fit, label_list_sigmoid, c(1:4)) +
+  scale_x_log10(limits=c(0.19,200),breaks = breaks_x_axis_d,labels=labels_x_axis_d)
 
-derivative_plot_overlaid
+derivative_plot_overlaid 
 
 ggsave(derivative_plot_overlaid+ylab(""),filename =  "overlaid_derivative.jpeg", path=output_path, height=6, width=9.04
        , units = "cm")

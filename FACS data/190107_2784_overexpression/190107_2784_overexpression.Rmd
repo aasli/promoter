@@ -1,0 +1,361 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+
+library(ggplot2)
+source("common_functions.R")
+source("stat_functions.R")
+
+t0p1_file<-"190110_2773_2784_sytox/p1/rad53_ypd"
+t0p2_file<-"190110_2773_2784_sytox/p1/rad_parent_ypd"
+
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/plots/01.19/190107_2784_overexpression" # for saving plots
+pattern_read<-""
+
+starting_well<-1
+
+
+
+columns_to_include<-c(2,5,7) #1=FSC-A, #2=FSC-H, #3=FSC-W, #4=SSC-A, #5=SSC-H, #6=SSC-W, #7= 488 [C]-H
+
+
+label_list<- c("rad53_t0",
+               "rad53_t90",
+               "rad53_t180",
+               "rad53_t270",
+               "rad53_t360",
+               "rad53_t22h",
+               
+               
+               "parent_t0",
+               "parent_t360",
+               "parent_t22h"
+               
+               )
+
+
+#---------------------------------------------------------------------------------------------------------------
+## pick the values to subset the data with. 
+
+columns <-c(1:4) #columns to be included in the subset
+col_fscw <- 1 #column of FSC-W/H
+col_sscw <- 2 #column of SSC-W/H
+limit_fscw <-90000 #the value for subsetting based on FSC-W/H
+limit_sscw <-90000 #the value for subsetting based on SSC-W/H
+lower_limit_fscw <-000 #the value for subsetting based on FSC-W/H, lower limit
+lower_limit_sscw <-0000 #the value for subsetting based on SSC-W/H, lower limit
+
+size_subset<-FALSE # set to TRUE if you want to use size_subsetted data, otherwise false.
+
+#---------------------------------------------------------------------------------------------------------------
+
+
+
+```
+
+
+```{r}
+library(tidyr)
+library(dplyr)
+
+f_sytox_plot<-function(dataframe, title, ylims, xlims){
+
+ 
+  final_plot<- ggplot(dataframe) +
+    
+    geom_histogram(aes_(x=dataframe[,3]), colour="red", bins=1000) +
+    facet_wrap(~dataframe[,4]) +
+    
+    # geom_vline(aes(xintercept=17000), colour="black") +
+    # geom_vline(aes(xintercept=22000), colour="black") +
+    # geom_vline(aes(xintercept=35000), colour="black") +
+    # geom_vline(aes(xintercept=42000), colour="black") +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab(expression(paste("Fluorescence x",(10)^3, "(a.u.)",sep=""))) +
+    scale_x_continuous(limits=(xlims), breaks = seq(0,60000,5000), labels = seq(0,60,5))+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+}
+
+ylims<-c(0,175)
+xlims<-c(0,60000)
+
+titles<-list("rad53","parent")
+sytox_plots<-mapply(f_sytox_plot, df_list, titles, MoreArgs = list(ylims, xlims), SIMPLIFY = F)
+
+
+
+mapply(f_save,sytox_plots,names(df_list),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+
+```
+
+```{r}
+
+
+f_size<-function(dataframe, title, ylims, xlims){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_density_2d(aes_(x=dataframe[,1],y=dataframe[,2])) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("FSC-H") +
+    ylab("SSC-H") +
+    scale_x_continuous(limits=(xlims))+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+}
+
+ylims<-c(0,200000)
+xlims<-c(0,150000)
+
+
+
+
+size_plots<-mapply(f_size, df_list, titles, MoreArgs = list(ylims, xlims), SIMPLIFY = F)
+
+size_plots
+
+
+ mapply(f_save,size_plots,paste(names(df_list),"size",sep="_"),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+
+
+
+```
+
+```{r}
+f_size_vs_stain_plot<-
+  function(dataframe, title,xlims,ylims){
+  
+  final_plot<- ggplot(dataframe) +
+    geom_density2d(aes_(x=dataframe[,5], y=dataframe[,3]),colour="darkgreen", bins=100) +
+    facet_wrap(~dataframe[,4]) +
+    
+    theme_bw() +
+    ggtitle(title) +
+    xlab("size") +
+    ylab("stain") +
+    xlim(xlims)+
+    ylim(ylims)
+  
+  return(final_plot)
+  
+  }
+
+xlim<-c(0,350000)
+ylim<-c(0,150000)
+
+size_vs_stain_plots<-mapply(f_size_vs_stain_plot, df_with_size, titles, MoreArgs = list(xlim,ylim), SIMPLIFY = F)
+
+size_vs_stain_plots
+
+mapply(f_save,size_vs_stain_plots,paste(names(df_list),"size_vs_stain.jpeg",sep=""),
+         MoreArgs = list(output_path, "", 10, 15), SIMPLIFY = F)
+
+
+```
+
+```{r}
+
+f_limit_plots<-function(dataframe, limits, xlims, ylims, title, name){
+
+  limit_frame<-data.frame()
+  
+  for(i in c(1:length(unique(dataframe$Dose)))){
+    dataframe<-dataframe
+    
+    dose<-unique(dataframe$Dose)[i]
+  
+  dose_limits<- cbind(dose, 
+                      limits[[i]][1], 
+                      limits[[i]][2], 
+                      limits[[i]][3],
+                      limits[[i]][4])
+  
+  limit_frame<- rbind(limit_frame, dose_limits)
+  
+  }  
+  
+  colnames(limit_frame)<-c("Dose","g1_start","s_start","g2_start","g2_end")
+  
+  stain_plot<- ggplot(dataframe) +
+
+    geom_histogram(aes(x=Stain), colour="red", bins=1000) +
+
+    geom_vline(data=limit_frame, aes(xintercept=g1_start), colour="black") +
+    geom_vline(data=limit_frame,aes(xintercept=s_start), colour="black") +
+    geom_vline(data=limit_frame,aes(xintercept=g2_start), colour="black") +
+    geom_vline(data=limit_frame,aes(xintercept=g2_end), colour="black") +
+
+    facet_wrap(~Dose) +
+
+    theme_bw() +
+    ggtitle(title) +
+    xlab(expression(paste("Fluorescence x",(10)^3, "(a.u.)",sep=""))) +
+    scale_x_continuous(limits=(xlims), breaks = seq(0,60000,5000), labels = seq(0,60,5))+
+    ylim(ylims)
+
+  ggsave(stain_plot, filename = paste(name, ".jpeg", sep=""), path=output_path,
+         height=10, width=15, unit="cm")
+  
+  
+  return(stain_plot)
+  
+  }
+
+f_populations<-function(dataframe, limits, xlims, ylims, title, name){
+
+  ratios<- data.frame()
+  
+  for(i in c(1:length(unique(dataframe$Dose)))){
+    dataframe<-dataframe
+    
+    dose<-unique(dataframe$Dose)[i]
+ 
+  g1<-nrow(filter(dataframe, Dose == dose & Stain > limits[[i]][1] & Stain < limits[[i]][2]))
+  s<-nrow(filter(dataframe, Dose == dose & Stain >= limits[[i]][2] & Stain <= limits[[i]][3]))
+  g2<-nrow(filter(dataframe, Dose == dose & Stain > limits[[i]][3] & Stain < limits[[i]][4]))
+  above_2n<-nrow(filter(dataframe, Dose == dose & Stain > limits[[i]][4]))
+  all<-nrow(filter(dataframe, Dose == dose & Stain > limits[[i]][1]))
+  
+  dose_ratios<- cbind( dose, 
+                       (g1/all*100),
+                       (s/all*100),
+                       (g2/all*100),
+                       (above_2n/all*100)
+                       )
+  
+  ratios<-rbind(ratios,dose_ratios)
+  
+  }  
+  
+  
+  colnames(ratios)<-c("Dose", "G1","S","G2","above_2n")
+  
+  
+  return(ratios)
+  
+  }
+  
+
+limits<- list( list(c(10000,20000,30000,37000), c(10000,20000,30000,37000)), #parent
+               
+               list(c(16000,25000,32500,42500), c(16000,23000,32000,42000),
+                    c(16000,22000,32500,40000), c(16000,21000,32000,40000),
+                    c(16000,21000,31000,40000), c(16000,20500,31000,40000)), #tor2
+
+               list(c(15000,22500,30000,40000), c(15000,22500,31000,40000),
+                    c(15000,22500,32500,40000), c(15000,22500,31000,40000),
+                    c(15000,22500,30000,40000), c(15000,22500,30000,40000)), #pma1-sd
+               
+               list(c(10000,22500,32500,40000), c(10000,22500,31000,40000),
+                    c(10000,21000,30000,40000), c(10000,20500,30000,40000),
+                    c(10000,20000,30000,40000), c(10000,20000,30000,40000)), #pma1-ypd
+               
+               list(c(8000,20000,30000,37000), c(10000,20000,30000,37000),
+                      c(10000,20000,30000,37000), c(10000,20000,30000,37000),
+                      c(10000,20000,30000,37000), c(10000,20000,30000,37000)), #pbr1
+               
+               list(c(15000,20000,30000,37000), c(15000,20500,30000,37000),
+                    c(15000,21000,30000,40000), c(15000,22000,31000,40000),
+                    c(15000,22000,30000,40000), c(15000,22500,30000,40000))  #whi5
+               
+               )
+
+xlim<-c(0,60000)
+ylim<-c(0,175)
+
+limit_plots<-mapply(f_limit_plots, df_list, limits, titles, names(df_list), MoreArgs = list(xlims=xlim, ylims=ylim),
+       SIMPLIFY = F)
+
+population_ratios<-mapply(f_populations, df_list, limits, titles, names(df_list), MoreArgs = list(xlims=xlim, ylims=ylim),
+       SIMPLIFY = F)
+
+
+f_ratio_plot<-function(ratios, name){
+    
+    ratio_plot<-ggplot(ratios) +
+    
+    geom_point(aes(x=Dose, y=G1, colour="G1"), size=3) +
+    geom_line(aes(x=Dose, y=G1, colour="G1"), size=1) +
+      
+    geom_point(aes(x=Dose, y=S, colour="S"), size=3) +
+    geom_line(aes(x=Dose, y=S, colour="S"), size=1) +  
+      
+    geom_point(aes(x=Dose, y=G2, colour="G2"), size=3) +
+    geom_line(aes(x=Dose, y=G2, colour="G2"), size=1) +
+      
+    geom_point(aes(x=Dose, y=above_2n, colour="above_2n"), size=3) +
+    geom_line(aes(x=Dose, y=above_2n, colour="above_2n"), size=1) +
+      
+    geom_point(aes(x=Dose, y=G2+above_2n, colour="G2+above_2n"), size=3) +
+    geom_line(aes(x=Dose, y=G2+above_2n, colour="G2+above_2n"), size=1) +
+      
+    scale_x_log10(breaks=c(0,1,5,3,8,15,20,50,100,600)) +
+    scale_y_continuous(limits = c(0,100), breaks = seq(0,100,10)) +
+      
+    xlab("aTc [ng/mL]") +
+    ylab("% of cells in") +
+    
+    guides(colour=guide_legend(nrow=1, title="")) +    
+      
+    theme_bw() +
+    theme(legend.position = c(0.4,0.8))
+    
+    
+  ggsave(ratio_plot, filename = paste(name, "_ratio.jpeg", sep=""), path=output_path,
+         height=10, width=15, unit="cm")
+
+  return(ratio_plot)
+}
+
+ratio_plots<-mapply(f_ratio_plot, population_ratios, names(df_list), SIMPLIFY = F)
+
+
+
+
+```
+
+
+
+```{r}
+# limit_plots, size_plots, size_vs_stain_plots, ratio_plots
+
+
+
+f_cowplots<-function(limit_plots, size_plots, size_vs_stain_plots, ratio_plots){
+  
+  cowplot<-cowplot::plot_grid(limit_plots,
+                     size_plots,
+                     size_vs_stain_plots,
+                     ratio_plots)
+  
+  return(cowplot)
+  }
+
+
+cowplots<- mapply(f_cowplots, limit_plots, size_plots, size_vs_stain_plots, ratio_plots, SIMPLIFY = F)
+
+mapply(cowplot::save_plot,plot=cowplots,filename=paste(names(df_list),"grid.jpeg",sep=""),
+       MoreArgs = list(path=output_path),SIMPLIFY = F)
+
+```
+

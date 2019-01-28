@@ -378,3 +378,18 @@ f_save_pdf(combined_final, "combined_offset")
 
 ```
 
+```{r}
+library(tidyr)
+library(dplyr)
+
+all_data<-rbind(list_melted_tor_dosed,list_melted_parent_dosed)
+
+ggplot(all_data,aes(x=time, y=amplitude)) +
+  geom_line(aes(colour=as.factor(doses), linetype=L1, group=interaction(well,L1))) +
+  xlim(0,30)
+
+write.csv(all_data,"growth_rate_2773_ypd.csv")
+
+unique(all_data$doses)
+```
+

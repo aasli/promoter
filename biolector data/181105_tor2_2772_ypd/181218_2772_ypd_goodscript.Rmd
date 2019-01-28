@@ -1,0 +1,219 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r settings}
+
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+output_path<-"C:/Users/aslia/Desktop/pisi/ETH/master project/labbook/paper/figures/titration/2772_ypd" #where to save the plots
+
+OFFSET<-TRUE # decide if you want to offset all curves by their minimum measured value, such that all curves start around 0.
+
+name_experimental_strain<- "tor2_gk"
+name_parent_strain<- "parent" # strain names as they will appear in the plot legend
+
+```
+
+
+```{r reading in and modifying the data}
+
+
+
+biolector_data<- 
+  as.data.frame(read.csv("181105_tor2_2772_ypd.csv")) %>% # read in the biolector file, from which the rows where the experiment is described is removed (so the first row is the column names)
+  filter(FILTERSET == "2") %>% # filter for only one filterset (this is equal to the biomass30/45/60 on the biolector software)
+  select(WELLNUM,TIME..h.,AMPLITUDE) %>%  # select only the columns with wells, time, and amplitude
+  filter(WELLNUM != "") %>% # remove the reference measurements
+  droplevels() # drop the wellnumber level that was used for reference measurements
+
+colnames(biolector_data)<-c("Wells","Time","Amplitude") 
+  
+levels(biolector_data$Wells)<-c(1:48) # change the well numbers from "A01" format to numbers of 1 to 48. A01 = 1, A02 =2... B01=9 etc etc.
+
+
+biolector_data$Wells<-as.numeric(biolector_data$Wells) # change the type of the well column from character to numeric
+
+biolector_data_strain<- 
+  biolector_data %>% 
+  mutate(Strain = case_when( Wells %in% c(1:4,9:12,17:20,25:28,33:36,41:44) ~ name_experimental_strain,
+                             Wells %in% c(5:8,13:16,21:24,29:32,37:40,45:48) ~ name_parent_strain)) %>%  # select groups of wells, and assign them a group name (for example which strain they are). this will be added to a new column called Strain
+  
+  mutate(Dose = case_when(Wells %in% seq(1,21,4) ~ 0,
+                           Wells %in% seq(2,22,4) ~ 8,
+                           Wells %in% seq(3,23,4) ~ 30,
+                           Wells %in% seq(4,24,4) ~ 200,
+                           Wells %in% seq(25,45,4) ~ 5,
+                           Wells %in% seq(26,46,4) ~ 15,
+                           Wells %in% seq(27,47,4) ~ 60,
+                           Wells %in% seq(28,48,4) ~ 600
+                           ))  # select groups of wells, assign aTc doses to them, which will be added to a new column called Dose
+  
+
+  if(OFFSET==TRUE){
+  biolector_data_strain<- 
+    
+  group_by(biolector_data_strain, Wells) %>%
+  
+  mutate(Amplitude = Amplitude-(min(Amplitude))) %>% # subtract the lowest measured value of each well from all measurements for that well, to move the lowest point of all curves to 0.
+  ungroup()
+  }
+   
+
+```
+
+
+```{r plotting the data}
+
+f_plot<-function(dataframe, xlims, ylims, colours){
+  
+  plot<-ggplot(dataframe) +
+  geom_line(aes(x=Time,y=Amplitude, colour=as.factor(Dose), linetype=Strain, group=Wells), size=0.7) +
+  scale_color_manual(values=colours) +
+    
+  xlab("Time (h)") +
+  ylab("Amplitude (a.u.)") +
+    
+  guides(colour=guide_legend(title = "aTc [ng/mL]", title.position = "top",ncol=1), 
+         linetype=FALSE) +
+    
+  xlim(xlims) +
+  ylim(ylims) +
+  scale_linetype_manual(values=c("longdash", "solid")) +
+  theme(panel.grid.minor = element_blank(),
+            legend.position = c(0.15,0.78), 
+            legend.direction = "horizontal",
+            legend.background = element_blank(),
+            legend.title = element_text(size=10),
+            legend.text = element_text(size=10),
+            legend.key.height = unit(0.35,"cm"),
+            legend.key = element_blank(),
+            legend.box.background = element_blank(),
+            panel.border = element_blank(),
+            axis.line = element_line(),
+            axis.title = element_text(hjust = 1),
+            panel.background = element_blank() )
+  
+ return(plot) 
+}
+
+colour_scale<-scales::seq_gradient_pal("yellow", "red", "Lab")(seq(0,1,length.out=8))
+
+f_plot(biolector_data_strain,c(10,NA),c(0,NA), colour_scale)
+
+
+
+ggsave("all_data.jpeg",path = output_path)
+
+
+  
+```
+
+
+```{r customized plots}
+
+
+# for plotting only certain doses of each strain
+doses_experiment_strain<-c(0,5,60,200,600)
+doses_parent_strain<- c(0)
+
+# for moving one strain along the x axis to overlay the exponential growth phases of all strains. to ignore differences in lag phase.
+x_offset_experiment_strain<- 0
+x_offset_parent_strain<- 1.7
+
+biolector_data_selected<- 
+  filter(biolector_data_strain, Strain == name_experimental_strain & Dose %in% doses_experiment_strain |
+                                Strain == name_parent_strain & Dose %in% doses_parent_strain) %>% # filter for the doses you want
+  
+  mutate(Time, Time = case_when (Strain == name_experimental_strain ~  Time + x_offset_experiment_strain, 
+                                 Strain == name_parent_strain ~  Time + x_offset_parent_strain
+                                 )) # offset the different strains if you want on the time (x) axis. 
+  
+
+colour_scale2<-scales::seq_gradient_pal("lightblue", "red", "Lab")(seq(0,1,length.out=8))
+
+f_plot(biolector_data_selected, c(10,25),c(0,NA),colour_scale2) +
+  scale_x_continuous(limits = c(10,25), breaks = seq(10,25,5), labels=seq(10,25,5)-10)
+
+ggsave("selected_data.jpeg",path = output_path, height=6, width=9.04, units="cm")
+ggsave("selected_data.pdf",path = output_path, height=6, width=9.04, units="cm")
+
+
+```
+
+
+
+```{r double checking}
+
+# double check that the wells and doses you specified above are correct, by creating a plot with the layout of the biolector plate
+
+biolector_plate_layout<-
+  mutate(biolector_data_strain, Rows = case_when( Wells <= 8 ~ "A",
+                                                Wells <= 16 ~ "B",
+                                                Wells <= 24 ~ "C",
+                                                Wells <= 32 ~ "D",
+                                                Wells <= 40 ~ "E",
+                                                Wells <= 48 ~ "F"
+                                                )) %>% # create a column with row names from A to F
+  mutate(Columns = case_when (Wells %in% seq(1,41,8) ~ 1,
+                              Wells %in% seq(2,42,8) ~ 2,
+                              Wells %in% seq(3,43,8) ~ 3,
+                              Wells %in% seq(4,44,8) ~ 4,
+                              Wells %in% seq(5,45,8) ~ 5,
+                              Wells %in% seq(6,46,8) ~ 6,
+                              Wells %in% seq(7,47,8) ~ 7,
+                              Wells %in% seq(8,48,8) ~ 8
+                              )) # create a column with column numbers from 1 to 8
+ 
+ 
+
+biolector_plate_layout$Rows<-factor(biolector_plate_layout$Rows, levels= rev(levels(as.factor(biolector_plate_layout$Rows)))) # reverse the levels of the "Column" column so that it can be plotted in the right direction on the y axis.
+ 
+
+
+# plot the strains on the biolector plate
+strain_map<-ggplot(biolector_plate_layout) +
+  
+  geom_point(aes(x=Columns, y=Rows, colour=Strain), size=5) +
+  
+  guides(colour=guide_legend(title="Strain", override.aes = list(size=2))) +
+  scale_x_continuous(breaks = c(1:8)) +
+  
+  theme (panel.background = element_blank(),
+         panel.grid.major = element_line(colour = "grey", linetype = 3),
+         legend.key.size = unit(0.3,"cm"), 
+         legend.text = element_text(size=8))
+
+
+ggsave(strain_map, filename = "strain_layout.jpeg",path = output_path, height=6, width=9.04, units="cm")
+ 
+
+# plot the doses on the biolector plate 
+dose_map<-ggplot(biolector_plate_layout) +
+  
+  geom_point(aes(x=Columns, y=Rows, colour=as.factor(Dose)), size=5) +
+  
+  scale_colour_manual(values=colour_scale) +
+  
+  scale_x_continuous(breaks = c(1:8)) +
+  guides(colour=guide_legend(title="Dose", override.aes = list(size=2))) +
+  
+  theme (panel.background = element_blank(),
+         panel.grid.major = element_line(colour = "grey", linetype = 3),
+          legend.key.size = unit(0.3,"cm"), 
+         legend.text = element_text(size=8))
+
+
+ggsave(dose_map, filename = "dose_layout.jpeg",path = output_path, height=6, width=9.04, units="cm")
+
+```
+
+
+```{r}
+
+```
+

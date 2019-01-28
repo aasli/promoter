@@ -164,13 +164,13 @@ colour_system<-"darkred"
 line_0<-1
 line_600<-2
 
-ypethanol<-f_plot(y_offset_df_list[c(1:4)], c(0,80), c(0,300), 26.5, 32.5, 20, 20)
+ypethanol<-f_plot(y_offset_df_list[c(1:4)], c(0,40), c(0,300), 26.5, 32.5, 20, 20)+ ylab("") + xlab("")
 
 proline<-f_plot(y_offset_df_list[c(5:8)], c(0,80), c(0,50), 10, 10, 10, 10)
 
-sd<-f_plot(y_offset_df_list[c(9:12)], c(0,80), c(0,90), 12, 12, 13.10, 12)
+sd<-f_plot(y_offset_df_list[c(9:12)], c(0,40), c(0,48), 12, 12, 13.10, 12) + ylab("")
 
-ypd<-f_plot(y_offset_df_list[c(13:16)], c(0,80), c(0,400), 7.2, 7, 7, 7)
+ypd<-f_plot(y_offset_df_list[c(13:16)], c(0,40), c(0,300), 7.2, 7, 7, 7) + xlab("")
 ```
 
 ```{r}
@@ -192,5 +192,21 @@ plots<-list(ypethanol, proline, sd, ypd)
 
 mapply(f_save, plots, filenames, SIMPLIFY = FALSE, MoreArgs = list(".jpeg")) 
 mapply(f_save, plots, filenames, SIMPLIFY = FALSE, MoreArgs = list(".pdf"))
+```
+
+
+
+```{r}
+
+ggplot(df_list[[16]]) +
+  geom_point(aes(x=time, y=amplitude)) +
+  theme_bw()
+
+which(round(df_list[[16]]$time,0)==15)
+which(round(df_list[[16]]$time,1)==16.5)
+
+df_list[[16]][154,7] 
+df_list[[16]][136,7] 
+
 ```
 

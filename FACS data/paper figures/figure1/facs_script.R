@@ -58,3 +58,5 @@ descriptives<-c(mapply(f_descriptives,df_list,experiment_doses_desc,
 # getting a value for size
 df_with_size<-lapply(df_list,f_size)
 
+
+mapply("write.csv", descriptives, paste(label_list, ".csv", sep = ""), SIMPLIFY = F)
